@@ -167,7 +167,7 @@ class Client:
         # == Set Up UDP Socket ==
         try:
             self.so = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        except socket.error as emsg:
+        except socket.error:
             print("Error: Could not create socket...")
             sys.exit(-1)
         # == Initialize Connection To Server ==
@@ -184,13 +184,13 @@ class Client:
 
             try:
                 self.so.sendto(initmsg.encode(), (self.host, self.port))
-            except socket.error as emsg:
+            except socket.error:
                 sys.exit(-1)
             sockdata = str()
             try:
                 sockdata, addr = self.so.recvfrom(data_size)
                 sockdata = sockdata.decode("utf-8")
-            except socket.error as emsg:
+            except socket.error:
                 print("Waiting for server on %d............" % self.port)
                 print("Count Down : " + str(n_fail))
                 if n_fail < 0:
@@ -278,7 +278,7 @@ class Client:
                 # Receive server data
                 sockdata, addr = self.so.recvfrom(data_size)
                 sockdata = sockdata.decode("utf-8")
-            except socket.error as emsg:
+            except socket.error:
                 print(".", end=" ")
                 # print "Waiting for data on %d.............." % self.port
             if "***identified***" in sockdata:
@@ -444,12 +444,12 @@ class ServerState:
                 if k == "gear":  # This is redundant now since it's part of RPM.
                     gs = "_._._._._._._._._"
                     p = int(self.d["gear"]) * 2 + 2  # Position
-                    l = "%d" % self.d["gear"]  # Label
-                    if l == "-1":
-                        l = "R"
-                    if l == "0":
-                        l = "N"
-                    strout = gs[:p] + "(%s)" % l + gs[p + 3 :]
+                    label = "%d" % self.d["gear"]  # Label
+                    if label == "-1":
+                        label = "R"
+                    if label == "0":
+                        label = "N"
+                    strout = gs[:p] + "(%s)" % label + gs[p + 3 :]
                 elif k == "damage":
                     strout = "%6.0f %s" % (
                         self.d[k],
@@ -609,7 +609,7 @@ class DriverAction:
         for k in self.d:
             out += "(" + k + " "
             v = self.d[k]
-            if not type(v) is list:
+            if type(v) is not list:
                 out += "%.3f" % v
             else:
                 out += " ".join([str(x) for x in v])
