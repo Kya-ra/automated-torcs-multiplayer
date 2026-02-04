@@ -5,6 +5,8 @@ stages:
 
 python_check:
   stage: check
+  tags:
+    - docker
   script:
     # Show versions (useful when things go wrong)
     - python --version
