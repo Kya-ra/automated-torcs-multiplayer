@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class Agent(object):
     def __init__(self, dim_action):
         self.dim_action = dim_action
 
     def act(self, ob, reward, done, vision_on):
-        #print("ACT!")
+        # print("ACT!")
 
         # Get an Observation from the environment.
         # Each observation vectors are numpy array.
@@ -18,7 +19,17 @@ class Agent(object):
         if vision_on is False:
             focus, speedX, speedY, speedZ, opponents, rpm, track, wheelSpinVel = ob
         else:
-            focus, speedX, speedY, speedZ, opponents, rpm, track, wheelSpinVel, vision = ob
+            (
+                focus,
+                speedX,
+                speedY,
+                speedZ,
+                opponents,
+                rpm,
+                track,
+                wheelSpinVel,
+                vision,
+            ) = ob
 
             """ The code below is for checking the vision input. This is very heavy for real-time Control
                 So you may need to remove.
@@ -33,4 +44,4 @@ class Agent(object):
             plt.draw()
             plt.pause(0.001)
             """
-        return np.tanh(np.random.randn(self.dim_action)) # random action
+        return np.tanh(np.random.randn(self.dim_action))  # random action

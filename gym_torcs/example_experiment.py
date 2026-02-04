@@ -25,19 +25,19 @@ for i in range(episode_count):
     else:
         ob = env.reset()
 
-    total_reward = 0.
+    total_reward = 0.0
     for j in range(max_steps):
         action = agent.act(ob, reward, done, vision)
 
         ob, reward, done, _ = env.step(action)
-        #print(ob)
+        # print(ob)
         total_reward += reward
 
         step += 1
         if done:
             break
 
-    print("TOTAL REWARD @ " + str(i) +" -th Episode  :  " + str(total_reward))
+    print("TOTAL REWARD @ " + str(i) + " -th Episode  :  " + str(total_reward))
     print("Total Step: " + str(step))
     print("")
 

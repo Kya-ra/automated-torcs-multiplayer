@@ -1,6 +1,7 @@
 import gym
 from gym import spaces
 import numpy as np
+
 # from os import path
 import snakeoil3_gym as snakeoil3
 import numpy as np
@@ -12,14 +13,15 @@ import time
 
 class TorcsEnv:
     terminal_judge_start = 500  # Speed limit is applied after this step
-    termination_limit_progress = 5  # [km/h], episode terminates if car is running slower than this limit
+    termination_limit_progress = (
+        5  # [km/h], episode terminates if car is running slower than this limit
+    )
     default_speed = 50
 
     initial_reset = True
 
-
     def __init__(self, vision=False, throttle=False, gear_change=False):
-       #print("Init")
+        # print("Init")
         self.vision = vision
         self.throttle = throttle
         self.gear_change = gear_change
@@ -27,14 +29,14 @@ class TorcsEnv:
         self.initial_run = True
 
         ##print("launch torcs")
-        os.system('pkill torcs')
+        os.system("pkill torcs")
         time.sleep(0.5)
         if self.vision is True:
-            os.system('torcs -nofuel -nodamage -nolaptime  -vision &')
+            os.system("torcs -nofuel -nodamage -nolaptime  -vision &")
         else:
-            os.system('torcs  -nofuel -nodamage -nolaptime &')
+            os.system("torcs  -nofuel -nodamage -nolaptime &")
         time.sleep(0.5)
-        os.system('sh autostart.sh')
+        os.system("sh autostart.sh")
         time.sleep(0.5)
 
         """
@@ -53,16 +55,20 @@ class TorcsEnv:
             self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,))
 
         if vision is False:
-            high = np.array([1., np.inf, np.inf, np.inf, 1., np.inf, 1., np.inf])
-            low = np.array([0., -np.inf, -np.inf, -np.inf, 0., -np.inf, 0., -np.inf])
+            high = np.array([1.0, np.inf, np.inf, np.inf, 1.0, np.inf, 1.0, np.inf])
+            low = np.array([0.0, -np.inf, -np.inf, -np.inf, 0.0, -np.inf, 0.0, -np.inf])
             self.observation_space = spaces.Box(low=low, high=high)
         else:
-            high = np.array([1., np.inf, np.inf, np.inf, 1., np.inf, 1., np.inf, 255])
-            low = np.array([0., -np.inf, -np.inf, -np.inf, 0., -np.inf, 0., -np.inf, 0])
+            high = np.array(
+                [1.0, np.inf, np.inf, np.inf, 1.0, np.inf, 1.0, np.inf, 255]
+            )
+            low = np.array(
+                [0.0, -np.inf, -np.inf, -np.inf, 0.0, -np.inf, 0.0, -np.inf, 0]
+            )
             self.observation_space = spaces.Box(low=low, high=high)
 
     def step(self, u):
-       #print("Step")
+        # print("Step")
         # convert thisAction to the actual torcs actionstr
         client = self.client
 
@@ -72,35 +78,36 @@ class TorcsEnv:
         action_torcs = client.R.d
 
         # Steering
-        action_torcs['steer'] = this_action['steer']  # in [-1, 1]
+        action_torcs["steer"] = this_action["steer"]  # in [-1, 1]
 
         #  Simple Autnmatic Throttle Control by Snakeoil
         if self.throttle is False:
             target_speed = self.default_speed
-            if client.S.d['speedX'] < target_speed - (client.R.d['steer']*50):
-                client.R.d['accel'] += .01
+            if client.S.d["speedX"] < target_speed - (client.R.d["steer"] * 50):
+                client.R.d["accel"] += 0.01
             else:
-                client.R.d['accel'] -= .01
+                client.R.d["accel"] -= 0.01
 
-            if client.R.d['accel'] > 0.2:
-                client.R.d['accel'] = 0.2
+            if client.R.d["accel"] > 0.2:
+                client.R.d["accel"] = 0.2
 
-            if client.S.d['speedX'] < 10:
-                client.R.d['accel'] += 1/(client.S.d['speedX']+.1)
+            if client.S.d["speedX"] < 10:
+                client.R.d["accel"] += 1 / (client.S.d["speedX"] + 0.1)
 
             # Traction Control System
-            if ((client.S.d['wheelSpinVel'][2]+client.S.d['wheelSpinVel'][3]) -
-               (client.S.d['wheelSpinVel'][0]+client.S.d['wheelSpinVel'][1]) > 5):
-                action_torcs['accel'] -= .2
+            if (client.S.d["wheelSpinVel"][2] + client.S.d["wheelSpinVel"][3]) - (
+                client.S.d["wheelSpinVel"][0] + client.S.d["wheelSpinVel"][1]
+            ) > 5:
+                action_torcs["accel"] -= 0.2
         else:
-            action_torcs['accel'] = this_action['accel']
+            action_torcs["accel"] = this_action["accel"]
 
         #  Automatic Gear Change by Snakeoil
         if self.gear_change is True:
-            action_torcs['gear'] = this_action['gear']
+            action_torcs["gear"] = this_action["gear"]
         else:
             #  Automatic Gear Change by Snakeoil is possible
-            action_torcs['gear'] = 1
+            action_torcs["gear"] = 1
             """
             if client.S.d['speedX'] > 50:
                 action_torcs['gear'] = 2
@@ -131,47 +138,48 @@ class TorcsEnv:
 
         # Reward setting Here #######################################
         # direction-dependent positive reward
-        track = np.array(obs['track'])
-        sp = np.array(obs['speedX'])
-        progress = sp*np.cos(obs['angle'])
+        track = np.array(obs["track"])
+        sp = np.array(obs["speedX"])
+        progress = sp * np.cos(obs["angle"])
         reward = progress
 
         # collision detection
-        if obs['damage'] - obs_pre['damage'] > 0:
+        if obs["damage"] - obs_pre["damage"] > 0:
             reward = -1
 
         # Termination judgement #########################
         episode_terminate = False
         if track.min() < 0:  # Episode is terminated if the car is out of track
-            reward = - 1
+            reward = -1
             episode_terminate = True
-            client.R.d['meta'] = True
+            client.R.d["meta"] = True
 
-        if self.terminal_judge_start < self.time_step: # Episode terminates if the progress of agent is small
+        if (
+            self.terminal_judge_start < self.time_step
+        ):  # Episode terminates if the progress of agent is small
             if progress < self.termination_limit_progress:
                 episode_terminate = True
-                client.R.d['meta'] = True
+                client.R.d["meta"] = True
 
-        if np.cos(obs['angle']) < 0: # Episode is terminated if the agent runs backward
+        if np.cos(obs["angle"]) < 0:  # Episode is terminated if the agent runs backward
             episode_terminate = True
-            client.R.d['meta'] = True
+            client.R.d["meta"] = True
 
-
-        if client.R.d['meta'] is True: # Send a reset signal
+        if client.R.d["meta"] is True:  # Send a reset signal
             self.initial_run = False
             client.respond_to_server()
 
         self.time_step += 1
 
-        return self.get_obs(), reward, client.R.d['meta'], {}
+        return self.get_obs(), reward, client.R.d["meta"], {}
 
     def reset(self, relaunch=False):
-        #print("Reset")
+        # print("Reset")
 
         self.time_step = 0
 
         if self.initial_reset is not True:
-            self.client.R.d['meta'] = True
+            self.client.R.d["meta"] = True
             self.client.respond_to_server()
 
             ## TENTATIVE. Restarting TORCS every episode suffers the memory leak bug!
@@ -180,7 +188,9 @@ class TorcsEnv:
                 print("### TORCS is RELAUNCHED ###")
 
         # Modify here if you use multiple tracks in the environment
-        self.client = snakeoil3.Client(p=3101, vision=self.vision)  # Open new UDP in vtorcs
+        self.client = snakeoil3.Client(
+            p=3101, vision=self.vision
+        )  # Open new UDP in vtorcs
         self.client.MAX_STEPS = np.inf
 
         client = self.client
@@ -195,86 +205,103 @@ class TorcsEnv:
         return self.get_obs()
 
     def end(self):
-        os.system('pkill torcs')
+        os.system("pkill torcs")
 
     def get_obs(self):
         return self.observation
 
     def reset_torcs(self):
-       #print("relaunch torcs")
-        os.system('pkill torcs')
+        # print("relaunch torcs")
+        os.system("pkill torcs")
         time.sleep(0.5)
         if self.vision is True:
-            os.system('torcs -nofuel -nodamage -nolaptime -vision &')
+            os.system("torcs -nofuel -nodamage -nolaptime -vision &")
         else:
-            os.system('torcs -nofuel -nodamage -nolaptime &')
+            os.system("torcs -nofuel -nodamage -nolaptime &")
         time.sleep(0.5)
-        os.system('sh autostart.sh')
+        os.system("sh autostart.sh")
         time.sleep(0.5)
 
     def agent_to_torcs(self, u):
-        torcs_action = {'steer': u[0]}
+        torcs_action = {"steer": u[0]}
 
         if self.throttle is True:  # throttle action is enabled
-            torcs_action.update({'accel': u[1]})
+            torcs_action.update({"accel": u[1]})
 
-        if self.gear_change is True: # gear change action is enabled
-            torcs_action.update({'gear': u[2]})
+        if self.gear_change is True:  # gear change action is enabled
+            torcs_action.update({"gear": u[2]})
 
         return torcs_action
 
-
     def obs_vision_to_image_rgb(self, obs_image_vec):
-        image_vec =  obs_image_vec
+        image_vec = obs_image_vec
         rgb = []
         temp = []
-        # convert size 64x64x3 = 12288 to 64x64=4096 2-D list 
+        # convert size 64x64x3 = 12288 to 64x64=4096 2-D list
         # with rgb values grouped together.
         # Format similar to the observation in openai gym
-        for i in range(0,12286,3):
+        for i in range(0, 12286, 3):
             temp.append(image_vec[i])
-            temp.append(image_vec[i+1])
-            temp.append(image_vec[i+2])
+            temp.append(image_vec[i + 1])
+            temp.append(image_vec[i + 2])
             rgb.append(temp)
             temp = []
         return np.array(rgb, dtype=np.uint8)
 
     def make_observaton(self, raw_obs):
         if self.vision is False:
-            names = ['focus',
-                     'speedX', 'speedY', 'speedZ',
-                     'opponents',
-                     'rpm',
-                     'track',
-                     'wheelSpinVel']
-            Observation = col.namedtuple('Observaion', names)
-            return Observation(focus=np.array(raw_obs['focus'], dtype=np.float32)/200.,
-                               speedX=np.array(raw_obs['speedX'], dtype=np.float32)/self.default_speed,
-                               speedY=np.array(raw_obs['speedY'], dtype=np.float32)/self.default_speed,
-                               speedZ=np.array(raw_obs['speedZ'], dtype=np.float32)/self.default_speed,
-                               opponents=np.array(raw_obs['opponents'], dtype=np.float32)/200.,
-                               rpm=np.array(raw_obs['rpm'], dtype=np.float32),
-                               track=np.array(raw_obs['track'], dtype=np.float32)/200.,
-                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=np.float32))
+            names = [
+                "focus",
+                "speedX",
+                "speedY",
+                "speedZ",
+                "opponents",
+                "rpm",
+                "track",
+                "wheelSpinVel",
+            ]
+            Observation = col.namedtuple("Observaion", names)
+            return Observation(
+                focus=np.array(raw_obs["focus"], dtype=np.float32) / 200.0,
+                speedX=np.array(raw_obs["speedX"], dtype=np.float32)
+                / self.default_speed,
+                speedY=np.array(raw_obs["speedY"], dtype=np.float32)
+                / self.default_speed,
+                speedZ=np.array(raw_obs["speedZ"], dtype=np.float32)
+                / self.default_speed,
+                opponents=np.array(raw_obs["opponents"], dtype=np.float32) / 200.0,
+                rpm=np.array(raw_obs["rpm"], dtype=np.float32),
+                track=np.array(raw_obs["track"], dtype=np.float32) / 200.0,
+                wheelSpinVel=np.array(raw_obs["wheelSpinVel"], dtype=np.float32),
+            )
         else:
-            names = ['focus',
-                     'speedX', 'speedY', 'speedZ',
-                     'opponents',
-                     'rpm',
-                     'track',
-                     'wheelSpinVel',
-                     'img']
-            Observation = col.namedtuple('Observaion', names)
+            names = [
+                "focus",
+                "speedX",
+                "speedY",
+                "speedZ",
+                "opponents",
+                "rpm",
+                "track",
+                "wheelSpinVel",
+                "img",
+            ]
+            Observation = col.namedtuple("Observaion", names)
 
             # Get RGB from observation
             image_rgb = self.obs_vision_to_image_rgb(raw_obs[names[8]])
 
-            return Observation(focus=np.array(raw_obs['focus'], dtype=np.float32)/200.,
-                               speedX=np.array(raw_obs['speedX'], dtype=np.float32)/self.default_speed,
-                               speedY=np.array(raw_obs['speedY'], dtype=np.float32)/self.default_speed,
-                               speedZ=np.array(raw_obs['speedZ'], dtype=np.float32)/self.default_speed,
-                               opponents=np.array(raw_obs['opponents'], dtype=np.float32)/200.,
-                               rpm=np.array(raw_obs['rpm'], dtype=np.float32),
-                               track=np.array(raw_obs['track'], dtype=np.float32)/200.,
-                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=np.float32),
-                               img=image_rgb)
+            return Observation(
+                focus=np.array(raw_obs["focus"], dtype=np.float32) / 200.0,
+                speedX=np.array(raw_obs["speedX"], dtype=np.float32)
+                / self.default_speed,
+                speedY=np.array(raw_obs["speedY"], dtype=np.float32)
+                / self.default_speed,
+                speedZ=np.array(raw_obs["speedZ"], dtype=np.float32)
+                / self.default_speed,
+                opponents=np.array(raw_obs["opponents"], dtype=np.float32) / 200.0,
+                rpm=np.array(raw_obs["rpm"], dtype=np.float32),
+                track=np.array(raw_obs["track"], dtype=np.float32) / 200.0,
+                wheelSpinVel=np.array(raw_obs["wheelSpinVel"], dtype=np.float32),
+                img=image_rgb,
+            )
