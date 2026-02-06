@@ -5,6 +5,8 @@ import os
 import time
 import math
 
+from logs import race_logger
+
 PI = 3.14159265359
 data_size = 2**17
 
@@ -394,30 +396,30 @@ def destringify(s):
 # --------------------------
 # Speed plan (tune these)
 # --------------------------
-BASE_SPEED = 100.0  # straight-line target speed (km/h)
-MIN_SPEED = 40.0  # minimum target speed in sharp turns
-MAX_SPEED = 240.0  # cap speed (for safety / stability)
-K_CURVE = 2.5  # how strongly curves reduce target speed (bigger = slower in turns)
+BASE_SPEED = 185.0  # straight-line target speed (km/h)
+MIN_SPEED = 25.0  # minimum target speed in sharp turns
+MAX_SPEED = 230.0  # cap speed (for safety / stability)
+K_CURVE = 34  # how strongly curves reduce target speed (bigger = slower in turns)
 
 # --------------------------
 # Steering plan (tune these)
 # --------------------------
-STEER_GAIN = 20.0  # angle -> steer sensitivity
-CENTER_GAIN = 0.35  # trackPos -> centering strength
-STEER_SMOOTH_ALPHA = 0.22  # 0.10~0.35, bigger = more responsive, smaller = smoother
+STEER_GAIN = 12.5  # angle -> steer sensitivity
+CENTER_GAIN = 0.22  # trackPos -> centering strength
+STEER_SMOOTH_ALPHA = 0.45  # 0.10~0.35, bigger = more responsive, smaller = smoother
 
 # --------------------------
 # Braking plan (tune these)
 # --------------------------
-BRAKE_ANGLE_TH = 0.30  # radians. bigger = brake later, smaller = brake earlier
-BRAKE_MAX = 0.50  # max brake intensity
+BRAKE_ANGLE_TH = 0.35  # radians. bigger = brake later, smaller = brake earlier
+BRAKE_MAX = 0.95  # max brake intensity
 
 # --------------------------
 # Traction control
 # --------------------------
 ENABLE_TC = True
-TC_SLIP_TH = 2.0
-TC_ACCEL_CUT = 0.12
+TC_SLIP_TH = 1.6
+TC_ACCEL_CUT = 0.18
 
 
 def estimate_curve_from_track(track19):
@@ -578,9 +580,24 @@ def drive(c: Client):
 
 
 if __name__ == "__main__":
+
+    race_logger.add_car_stats(BASE_SPEED, MIN_SPEED, MAX_SPEED, K_CURVE, STEER_GAIN, CENTER_GAIN, STEER_SMOOTH_ALPHA, BRAKE_ANGLE_TH, BRAKE_MAX, ENABLE_TC, TC_SLIP_TH, TC_ACCEL_CUT)
+    
+    results_filepath = "../torcs/results/quickrace/"
+    xml_files = [
+        os.path.join(results_filepath, f)
+        for f in os.listdir(results_filepath)
+        if f.lower().endswith(".xml")
+    ]
+    file_amount = len(xml_files)
+
     C = Client(p=3001)
     for step in range(C.maxSteps, 0, -1):
         C.get_servers_input()
         drive(C)
         C.respond_to_server()
+    
+    race_logger.check_for_new_file(file_amount)
+    race_logger.add_race_stats()
+
     C.shutdown()
