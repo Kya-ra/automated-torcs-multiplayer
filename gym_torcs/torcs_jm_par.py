@@ -4,6 +4,10 @@ import getopt
 import os
 import time
 import math
+import shutil
+import sys
+import subprocess
+import signal
 
 from logs import race_logger
 
@@ -596,8 +600,11 @@ if __name__ == "__main__":
         C.get_servers_input()
         drive(C)
         C.respond_to_server()
-    
+
+
     race_logger.check_for_new_file(file_amount)
     race_logger.add_race_stats()
+
+    subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
 
     C.shutdown()
