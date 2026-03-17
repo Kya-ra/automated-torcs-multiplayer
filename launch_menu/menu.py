@@ -3,6 +3,8 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QVB
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFontDatabase, QFont
 
+from subprocess import call
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -24,6 +26,7 @@ class MainWindow(QMainWindow):
         multiplayer_button = QPushButton("Multiplayer", central)
         singleplayer_button.setFont(QFont(torcs_font, 48))
         multiplayer_button.setFont(QFont(torcs_font, 48))
+        singleplayer_button.clicked.connect(singleplayer)
 
         menu_layout = QVBoxLayout()
         menu_layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
@@ -62,6 +65,9 @@ class MainWindow(QMainWindow):
                 margin-bottom: 20px;                  
             }
         """)
+
+def singleplayer():
+    rc = call(["./launch.sh"])
 
 
 def main():

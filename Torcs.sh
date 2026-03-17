@@ -1,3 +1,5 @@
+#!/bin/bash
+
 dpkg -s podman &> /dev/null  
 
 if [ $? -ne 0 ]
@@ -12,4 +14,4 @@ if [ $? -ne 0 ]
             	echo    "Podman is installed, running container"
 fi
 
-podman run --rm -it --network=host -e DISPLAY=$DISPLAY -e XAUTHORITY=$XAUTHORITY -v /tmp/.X11-unix:/tmp/.X11-unix:ro -v $XAUTHORITY:$XAUTHORITY:ro --device /dev/dri torcs-podman
+podman run --rm -it --network=host -e DISPLAY="$DISPLAY" -e WAYLAND_DISPLAY="$WAYLAND_DISPLAY" -e XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" -v /mnt/wslg:/mnt/wslg -v /tmp/.X11-unix:/tmp/.X11-unix -v "$XDG_RUNTIME_DIR":"$XDG_RUNTIME_DIR" torcs-podman
