@@ -4,10 +4,9 @@ import getopt
 import os
 import time
 import math
-import shutil
-import sys
-import subprocess
-import signal
+#import shutil
+#import subprocess
+#import signal
 
 from logs import race_logger
 

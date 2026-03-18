@@ -1,1 +1,11 @@
-podman run --rm -it --network=host -e DISPLAY="$DISPLAY" -e WAYLAND_DISPLAY="$WAYLAND_DISPLAY" -e XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" -v /mnt/wslg:/mnt/wslg -v /tmp/.X11-unix:/tmp/.X11-unix -v "$XDG_RUNTIME_DIR":"$XDG_RUNTIME_DIR" torcs-podman
+SESSION="torcs"
+
+tmux new-session -d -s $SESSION
+tmux send-keys -t $SESSION "source venv/bin/activate" C-m
+tmux send-keys -t $SESSION "cd gym_torcs" C-m
+tmux send-keys -t $SESSION "python3 torcs_jm_par.py" C-m
+tmux split-window -h -t $SESSION
+tmux send-keys -t $SESSION "cd torcs" C-m
+tmux send-keys -t $SESSION "sudo wine wtorcs.exe" C-m
+
+tmux attach-session -t $SESSION

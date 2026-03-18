@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
         """)
 
 def singleplayer():
-    rc = call(["./launch.sh"])
+    call(["./launch.sh"])
 
 
 def main():
