@@ -399,8 +399,8 @@ def destringify(s):
 # --------------------------
 # Speed plan (tune these)
 # --------------------------
-BASE_SPEED = 185.0  # straight-line target speed (km/h)
-MIN_SPEED = 25.0  # minimum target speed in sharp turns
+BASE_SPEED = 145.0  # straight-line target speed (km/h)
+MIN_SPEED = 50.0  # minimum target speed in sharp turns
 MAX_SPEED = 230.0  # cap speed (for safety / stability)
 K_CURVE = 34  # how strongly curves reduce target speed (bigger = slower in turns)
 

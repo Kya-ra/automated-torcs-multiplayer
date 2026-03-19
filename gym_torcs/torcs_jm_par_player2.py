@@ -79,7 +79,7 @@ class Client:
 
         self.host = "localhost"
         self.port = 3002
-        self.sid = "SCR6"
+        self.sid = "SCR2"
         self.maxEpisodes = 1
         self.trackname = "unknown"
         self.stage = 3
@@ -398,7 +398,7 @@ def destringify(s):
 # Speed plan (tune these)
 # --------------------------
 BASE_SPEED = 160.0  # straight-line target speed (km/h)
-MIN_SPEED = 20.0  # minimum target speed in sharp turns
+MIN_SPEED = 55.0  # minimum target speed in sharp turns
 MAX_SPEED = 210.0  # cap speed (for safety / stability)
 K_CURVE = 34  # how strongly curves reduce target speed (bigger = slower in turns)
 
