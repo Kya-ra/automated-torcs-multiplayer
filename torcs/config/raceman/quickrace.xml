@@ -51,6 +51,10 @@
       <attnum name="idx" val="0"/>
       <attstr name="module" val="scr_server"/>
     </section>
+    <section name="6">
+      <attnum name="idx" val="1"/>
+      <attstr name="module" val="scr_server"/>
+    </section>
 
   </section>
 
@@ -101,6 +105,11 @@
 
     <section name="5">
       <attstr name="module" val="tita"/>
+      <attnum name="idx" val="1"/>
+    </section>
+
+    <section name="6">
+      <attstr name="module" val="scr_server"/>
       <attnum name="idx" val="1"/>
     </section>
 
