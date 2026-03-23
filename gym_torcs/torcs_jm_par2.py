@@ -313,7 +313,7 @@ class DriverAction:
     def __init__(self):
         self.actionstr = str()
         self.d = {
-            "accel": 0.2,
+            "accel": 0.55,
             "brake": 0.0,
             "clutch": 0.0,
             "gear": 1,
@@ -397,30 +397,30 @@ def destringify(s):
 # --------------------------
 # Speed plan (tune these)
 # --------------------------
-BASE_SPEED = 160.0  # straight-line target speed (km/h)
-MIN_SPEED = 55.0  # minimum target speed in sharp turns
-MAX_SPEED = 210.0  # cap speed (for safety / stability)
-K_CURVE = 34  # how strongly curves reduce target speed (bigger = slower in turns)
+BASE_SPEED = 235.0  # straight-line target speed (km/h)
+MIN_SPEED = 70.0  # minimum target speed in sharp turns
+MAX_SPEED = 300.0  # cap speed (for safety / stability)
+K_CURVE = 20  # how strongly curves reduce target speed (bigger = slower in turns)
 
 # --------------------------
 # Steering plan (tune these)
 # --------------------------
-STEER_GAIN = 12.5  # angle -> steer sensitivity
-CENTER_GAIN = 0.22  # trackPos -> centering strength
-STEER_SMOOTH_ALPHA = 0.45  # 0.10~0.35, bigger = more responsive, smaller = smoother
+STEER_GAIN = 6.8  # angle -> steer sensitivity
+CENTER_GAIN = 0.08  # trackPos -> centering strength
+STEER_SMOOTH_ALPHA = 0.78  # 0.10~0.35, bigger = more responsive, smaller = smoother
 
 # --------------------------
 # Braking plan (tune these)
 # --------------------------
-BRAKE_ANGLE_TH = 0.35  # radians. bigger = brake later, smaller = brake earlier
-BRAKE_MAX = 0.95  # max brake intensity
+BRAKE_ANGLE_TH = 0.55  # radians. bigger = brake later, smaller = brake earlier
+BRAKE_MAX = 0.45  # max brake intensity
 
 # --------------------------
 # Traction control
 # --------------------------
 ENABLE_TC = True
-TC_SLIP_TH = 1.6
-TC_ACCEL_CUT = 0.18
+TC_SLIP_TH = 2.8
+TC_ACCEL_CUT = 0.05
 
 
 def estimate_curve_from_track(track19):
