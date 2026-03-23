@@ -10,9 +10,10 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY launch.sh .
+COPY test.py .
 RUN chmod +x /torcs/launch.sh
 COPY gym_torcs /torcs/gym_torcs
 COPY torcs /torcs/torcs
 COPY launch_menu /torcs/launch_menu
 
-CMD ["python3", "launch_menu/menu.py"]
+CMD ["python3", "test.py"]

@@ -4,7 +4,7 @@ import getopt
 import os
 import time
 import math
-import subprocess
+#import subprocess
 
 from logs import race_logger
 

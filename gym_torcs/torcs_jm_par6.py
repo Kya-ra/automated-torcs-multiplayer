@@ -4,7 +4,7 @@ import getopt
 import os
 import time
 import math
-import subprocess
+#import subprocess
 
 from logs import race_logger
 
@@ -594,7 +594,7 @@ if __name__ == "__main__":
     print("Player 6 is running.")
 
     C6 = Client(p=3006)
-    for step in range(C2.maxSteps, 0, -1):
+    for step in range(C6.maxSteps, 0, -1):
         C6.get_servers_input()
         drive(C6)
         C6.respond_to_server()
