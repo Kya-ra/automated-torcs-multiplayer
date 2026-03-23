@@ -3,7 +3,11 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QVB
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFontDatabase, QFont
 
+import pyperclip
+
 from subprocess import call
+
+player_count = 2
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -27,6 +31,7 @@ class MainWindow(QMainWindow):
         singleplayer_button.setFont(QFont(torcs_font, 48))
         multiplayer_button.setFont(QFont(torcs_font, 48))
         singleplayer_button.clicked.connect(singleplayer)
+        multiplayer_button.clicked.connect(multiplayer)
 
         menu_layout = QVBoxLayout()
         menu_layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
@@ -67,6 +72,12 @@ class MainWindow(QMainWindow):
         """)
 
 def singleplayer():
+    player_count = 1
+    pyperclip.copy(player_count)
+    call(["./launch.sh"])
+
+def multiplayer():
+    pyperclip.copy(player_count)
     call(["./launch.sh"])
 
 

@@ -594,7 +594,7 @@ if __name__ == "__main__":
     print("Player 5 is running.")
 
     C5 = Client(p=3005)
-    for step in range(C2.maxSteps, 0, -1):
+    for step in range(C5.maxSteps, 0, -1):
         C5.get_servers_input()
         drive(C5)
         C5.respond_to_server()
