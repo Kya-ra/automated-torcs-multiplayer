@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Default player count
+PLAYER_COUNT=${1:-1}
+
 # ------------------------------
 # 1️⃣ Ensure Podman exists
 # ------------------------------
@@ -63,4 +66,4 @@ fi
 # 4️⃣ Run the container
 # ------------------------------
 echo "Running torcs-podman container..."
-podman run --rm -it --network=host $GPU_OPTS $DISPLAY_OPTS torcs-podman
+podman run --rm -it --network=host $GPU_OPTS $DISPLAY_OPTS torcs-podman python3 containerrun.py "$PLAYER_COUNT"
