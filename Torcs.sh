@@ -14,11 +14,42 @@ if ! command -v podman &> /dev/null; then
 fi
 
 # ------------------------------
-# 2️⃣ Build container if missing
+# 2️⃣ Build container if missing or outdated
 # ------------------------------
-if ! podman image exists torcs-podman; then
-    echo "Building torcs-podman container..."
-    podman build -t torcs-podman -f podman/Containerfile .
+
+IMAGE_NAME="torcs-podman"
+HASH_FILE=".torcs_build_hash"
+
+# Compute hash of relevant files (exclude stuff like .git, logs, etc.)
+CURRENT_HASH=$(find . \
+    -type f \
+    ! -path "./.git/*" \
+    ! -path "./logs/*" \
+    ! -path "./*.pyc" \
+    ! -path "./__pycache__/*" \
+    -exec sha256sum {} + | sort | sha256sum | awk '{print $1}')
+
+PREVIOUS_HASH=""
+if [ -f "$HASH_FILE" ]; then
+    PREVIOUS_HASH=$(cat "$HASH_FILE")
+fi
+
+# Check if image exists
+IMAGE_EXISTS=false
+if podman image exists "$IMAGE_NAME"; then
+    IMAGE_EXISTS=true
+fi
+
+# Decide whether to rebuild
+if [ "$IMAGE_EXISTS" = false ] || [ "$CURRENT_HASH" != "$PREVIOUS_HASH" ]; then
+    echo "Changes detected or image missing → rebuilding container..."
+
+    podman build -t "$IMAGE_NAME" -f podman/Containerfile .
+
+    # Save new hash
+    echo "$CURRENT_HASH" > "$HASH_FILE"
+else
+    echo "Container is up to date."
 fi
 
 # ------------------------------

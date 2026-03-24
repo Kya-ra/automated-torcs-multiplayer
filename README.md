@@ -3,8 +3,7 @@
 ## Steps to run:
 
 1. Place Scripts in /Scripts
-2. Build container with `podman build -t torcs-podman -f podman/Containerfile .`
-3. Run program with `python3 launch_menu/menu_multiplayer.py`
-4. Follow on-screen instructions
-5. Launch Multiplayer
-6. Hit Enter 3 times
+2. Run with `python3 launch_menu/menu_multiplayer.py`
+3. Follow on-screen instructions
+4. Launch Multiplayer
+5. Hit Enter 3 times
