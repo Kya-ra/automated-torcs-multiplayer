@@ -41,4 +41,4 @@ for i in range(player_count):
     drivers_section.append(sec)
 
 tree.write(xml_path, encoding="UTF-8", xml_declaration=True)
-call(["./faststart.sh", str(player_count)])
+call(["./launch.sh", str(player_count)])

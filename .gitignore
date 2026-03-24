@@ -1,5 +1,5 @@
 venv
 torcs/*
 __pycache__
-gym_torcs/logs/__pycache__/*
+gym_torcs/logs/*
 launch_menu/fonts/*
