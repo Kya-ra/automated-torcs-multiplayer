@@ -97,12 +97,10 @@ class MainWindow(QMainWindow):
 
         self.torcs_font = self._load_font()
 
-        self.main_page = self._build_main_page()
         self.multiplayer_page = self._build_multiplayer_page()
 
-        self.stacked.addWidget(self.main_page)
         self.stacked.addWidget(self.multiplayer_page)
-        self.stacked.setCurrentWidget(self.main_page)
+        self.stacked.setCurrentWidget(self.multiplayer_page)
 
         self._apply_styles()
         self._update_script_rows()
@@ -115,31 +113,6 @@ class MainWindow(QMainWindow):
             if families:
                 return families[0]
         return "Arial"
-
-    def _build_main_page(self):
-        page = QWidget()
-        page.setObjectName("backgroundImage")
-
-        title = QLabel("Torcs Setup")
-        title.setFont(QFont(self.torcs_font, 46))
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        single_button = QPushButton("Singleplayer")
-        multi_button = QPushButton("Multiplayer")
-        single_button.setFont(QFont(self.torcs_font, 38))
-        multi_button.setFont(QFont(self.torcs_font, 38))
-
-        single_button.clicked.connect(self.launch_singleplayer)
-        multi_button.clicked.connect(self.show_multiplayer_page)
-
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(40, 30, 40, 30)
-        layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
-        layout.addStretch()
-        layout.addWidget(single_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-        layout.addWidget(multi_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-        layout.addStretch()
-        return page
 
     def _build_multiplayer_page(self):
         page = QWidget()
@@ -158,7 +131,7 @@ class MainWindow(QMainWindow):
         count_label.setFont(QFont("Arial", 12))
         self.player_count_spin = QSpinBox()
         self.player_count_spin.setRange(1, 8)
-        self.player_count_spin.setValue(2)
+        self.player_count_spin.setValue(1)
         self.player_count_spin.valueChanged.connect(self._update_script_rows)
         count_wrap.addStretch()
         count_wrap.addWidget(count_label)
@@ -176,13 +149,10 @@ class MainWindow(QMainWindow):
         rows_holder = QWidget()
         rows_holder.setLayout(rows_layout)
 
-        back_button = QPushButton("Back")
         launch_button = QPushButton("Launch Multiplayer")
-        back_button.clicked.connect(self.show_main_page)
         launch_button.clicked.connect(self.launch_multiplayer)
 
         action_row = QHBoxLayout()
-        action_row.addWidget(back_button)
         action_row.addStretch()
         action_row.addWidget(launch_button)
 
@@ -235,9 +205,6 @@ class MainWindow(QMainWindow):
             """
         )
 
-    def show_main_page(self):
-        self.stacked.setCurrentWidget(self.main_page)
-
     def show_multiplayer_page(self):
         self.stacked.setCurrentWidget(self.multiplayer_page)
 
@@ -276,15 +243,6 @@ class MainWindow(QMainWindow):
                 return None
             selected.append(file_path)
         return selected
-
-    def launch_singleplayer(self):
-        try:
-            subprocess.Popen(
-                ["./Torcs.sh", "1"],
-                cwd=self.repo_root,
-            )
-        except Exception as exc:
-            print(f"Failed to launch singleplayer: {exc}")
 
     def launch_multiplayer(self):
         scripts = self._validate_selected_scripts()
