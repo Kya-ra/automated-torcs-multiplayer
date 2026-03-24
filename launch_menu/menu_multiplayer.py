@@ -278,7 +278,13 @@ class MainWindow(QMainWindow):
         return selected
 
     def launch_singleplayer(self):
-        self._run_backend(player_count=1)
+        try:
+            subprocess.Popen(
+                ["./Torcs.sh", "1"],
+                cwd=self.repo_root,
+            )
+        except Exception as exc:
+            print(f"Failed to launch singleplayer: {exc}")
 
     def launch_multiplayer(self):
         scripts = self._validate_selected_scripts()
