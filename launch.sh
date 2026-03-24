@@ -4,10 +4,16 @@ set -e
 
 SESSION="torcs"
 players=$1
+mapfile -t SCRIPT_ARRAY <<< "$SCRIPTS"
 per_window=2
 
 if [ -z "$players" ]; then
     echo "Usage: $0 <num_players>"
+    exit 1
+fi
+
+if [ "${#SCRIPT_ARRAY[@]}" -ne "$players" ]; then
+    echo "Error: number of scripts (${#SCRIPT_ARRAY[@]}) does not match players ($players)"
     exit 1
 fi
 
@@ -32,9 +38,17 @@ while [ $player -le $players ]; do
 
     current=$(tmux list-panes -t $SESSION:$window_index -F "#{pane_id}" | head -n1)
 
-    for ((i=start; i<=end; i++)); do
-        tmux send-keys -t $current "cd /torcs/gym_torcs" C-m
-        tmux send-keys -t $current "python3 torcs_jm_par$i.py" C-m
+    for ((i=start; i<=end; i++)); do        
+        script_index=$((i-1))
+
+        if [ -n "${SCRIPT_ARRAY[$script_index]}" ]; then
+            script="${SCRIPT_ARRAY[$script_index]}"
+        else
+            echo "No script provided for player $i"
+            exit 1
+        fi
+
+        tmux send-keys -t $current "python3 $script" C-m
 
         if [ $i -lt $end ]; then
             current=$(tmux split-window -t $current -P -F "#{pane_id}")

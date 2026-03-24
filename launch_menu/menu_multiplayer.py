@@ -20,9 +20,10 @@ from PyQt6.QtWidgets import (
 
 
 class ScriptRow(QWidget):
-    def __init__(self, player_index: int, parent=None):
+    def __init__(self, player_index: int, parent=None, scripts_dir=None):
         super().__init__(parent)
         self.player_index = player_index
+        self.scripts_dir = scripts_dir
         self.file_path = ""
 
         row = QHBoxLayout(self)
@@ -51,6 +52,7 @@ class ScriptRow(QWidget):
         dialog = QFileDialog(None, f"Select script for Player {self.player_index}")
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         dialog.setNameFilter("Python Files (*.py)")
+        dialog.setDirectory(str(self.scripts_dir))
         # Force native dialog so it does not inherit themed colors.
         dialog.setOption(QFileDialog.Option.DontUseNativeDialog, False)
         # Fallback styling in case non-native dialog is used under WSL.
@@ -90,7 +92,7 @@ class MainWindow(QMainWindow):
         self.setFixedSize(1000, 700)
 
         self.repo_root = Path(__file__).resolve().parents[1]
-        self.scripts_dir = self.repo_root / "gym_torcs"
+        self.scripts_dir = self.repo_root / "Scripts"
 
         self.stacked = QStackedWidget()
         self.setCentralWidget(self.stacked)
@@ -118,11 +120,11 @@ class MainWindow(QMainWindow):
         page = QWidget()
         page.setObjectName("backgroundImage")
 
-        title = QLabel("Multiplayer Setup")
+        title = QLabel("Player Setup")
         title.setFont(QFont(self.torcs_font, 34))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        subtitle = QLabel("Select players and upload one Python script per player.")
+        subtitle = QLabel("Select player(s) and upload one Python script per player.")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setFont(QFont("Arial", 12))
 
@@ -142,7 +144,7 @@ class MainWindow(QMainWindow):
         rows_layout = QVBoxLayout()
         rows_layout.setSpacing(8)
         for i in range(1, 9):
-            row = ScriptRow(i)
+            row = ScriptRow(i, scripts_dir=self.scripts_dir)
             self.script_rows.append(row)
             rows_layout.addWidget(row)
 
@@ -248,43 +250,18 @@ class MainWindow(QMainWindow):
         scripts = self._validate_selected_scripts()
         if scripts is None:
             return
-        self._run_backend(player_count=self.player_count_spin.value(), scripts=scripts)
 
-    def _run_backend(self, player_count: int, scripts=None):
-        scripts = scripts or []
-        cmd = [sys.executable, "test.py", "--players", str(player_count)]
-        if scripts:
-            cmd += ["--scripts", *scripts]
+        player_count = self.player_count_spin.value()
 
-        # Backend currently prompts for count through stdin; scripts are
-        # forwarded as optional args for future backend handling.
         try:
-            proc = subprocess.run(
-                cmd,
+            script_paths = [str(Path(s).relative_to(self.repo_root)) for s in scripts]
+
+            subprocess.Popen(
+                ["./Torcs.sh", str(player_count), *script_paths],
                 cwd=self.repo_root,
-                input=f"{player_count}\n",
-                capture_output=True,
-                text=True,
             )
-            if proc.returncode == 0:
-                QMessageBox.information(
-                    self,
-                    "Launch Started",
-                    f"Started backend for {player_count} player(s).",
-                )
-            else:
-                error_text = proc.stderr.strip() or proc.stdout.strip() or "Unknown error."
-                QMessageBox.critical(
-                    self,
-                    "Launch Failed",
-                    f"Backend returned an error:\n\n{error_text}",
-                )
         except Exception as exc:
-            QMessageBox.critical(
-                self,
-                "Launch Failed",
-                f"Unable to start backend:\n\n{exc}",
-            )
+            print(f"Failed to launch multiplayer: {exc}")
 
 
 def main():

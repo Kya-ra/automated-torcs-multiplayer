@@ -71,6 +71,7 @@ RUN chmod +x launch.sh
 COPY gym_torcs /torcs/gym_torcs
 COPY torcs /torcs/torcs
 COPY launch_menu /torcs/launch_menu
+COPY Scripts /torcs/Scripts
 
 # ------------------------------
 # 4️⃣ Environment defaults

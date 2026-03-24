@@ -3,6 +3,7 @@ set -e
 
 # Default player count
 PLAYER_COUNT=${1:-1}
+SCRIPTS=$(printf "%s\n" "${@:2}")
 
 # ------------------------------
 # 1️⃣ Ensure Podman exists
@@ -66,4 +67,11 @@ fi
 # 4️⃣ Run the container
 # ------------------------------
 echo "Running torcs-podman container..."
-podman run --rm -it --network=host -e PLAYER_COUNT="$PLAYER_COUNT" $GPU_OPTS $DISPLAY_OPTS torcs-podman
+
+podman run --rm -it \
+    --network=host \
+    -e PLAYER_COUNT="$PLAYER_COUNT" \
+    -e SCRIPTS="$SCRIPTS" \
+    $GPU_OPTS \
+    $DISPLAY_OPTS \
+    torcs-podman
