@@ -157,7 +157,7 @@ class MainWindow(QMainWindow):
         count_label = QLabel("Player Count:")
         count_label.setFont(QFont("Arial", 12))
         self.player_count_spin = QSpinBox()
-        self.player_count_spin.setRange(1, 6)
+        self.player_count_spin.setRange(1, 8)
         self.player_count_spin.setValue(2)
         self.player_count_spin.valueChanged.connect(self._update_script_rows)
         count_wrap.addStretch()
@@ -168,7 +168,7 @@ class MainWindow(QMainWindow):
         self.script_rows = []
         rows_layout = QVBoxLayout()
         rows_layout.setSpacing(8)
-        for i in range(1, 7):
+        for i in range(1, 9):
             row = ScriptRow(i)
             self.script_rows.append(row)
             rows_layout.addWidget(row)
