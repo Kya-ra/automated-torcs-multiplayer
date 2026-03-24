@@ -1,9 +1,10 @@
 import xml.etree.ElementTree as ET
 from subprocess import call
+import os
 
 xml_path = "torcs/config/raceman/quickrace.xml"
 
-player_count = int(input("Enter player count: "))
+player_count = int(os.getenv("PLAYER_COUNT", 1))
 
 tree = ET.parse(xml_path)
 root = tree.getroot()
