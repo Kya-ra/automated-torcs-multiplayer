@@ -3,7 +3,7 @@
 set -e
 
 SESSION="torcs"
-players=$1
+players=${PLAYER_COUNT:-1}
 mapfile -t SCRIPT_ARRAY <<< "$SCRIPTS"
 per_window=2
 
