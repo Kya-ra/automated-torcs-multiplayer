@@ -4,8 +4,11 @@ import getopt
 import os
 import time
 import math
+#import shutil
+#import subprocess
+#import signal
 
-from logs import race_logger
+#from logs import race_logger
 
 PI = 3.14159265359
 data_size = 2**17
@@ -396,8 +399,8 @@ def destringify(s):
 # --------------------------
 # Speed plan (tune these)
 # --------------------------
-BASE_SPEED = 185.0  # straight-line target speed (km/h)
-MIN_SPEED = 25.0  # minimum target speed in sharp turns
+BASE_SPEED = 145.0  # straight-line target speed (km/h)
+MIN_SPEED = 50.0  # minimum target speed in sharp turns
 MAX_SPEED = 230.0  # cap speed (for safety / stability)
 K_CURVE = 34  # how strongly curves reduce target speed (bigger = slower in turns)
 
@@ -581,8 +584,9 @@ def drive(c: Client):
 
 if __name__ == "__main__":
 
-    race_logger.add_car_stats(BASE_SPEED, MIN_SPEED, MAX_SPEED, K_CURVE, STEER_GAIN, CENTER_GAIN, STEER_SMOOTH_ALPHA, BRAKE_ANGLE_TH, BRAKE_MAX, ENABLE_TC, TC_SLIP_TH, TC_ACCEL_CUT)
+    #race_logger.add_car_stats(BASE_SPEED, MIN_SPEED, MAX_SPEED, K_CURVE, STEER_GAIN, CENTER_GAIN, STEER_SMOOTH_ALPHA, BRAKE_ANGLE_TH, BRAKE_MAX, ENABLE_TC, TC_SLIP_TH, TC_ACCEL_CUT)
     
+    """
     results_filepath = "../torcs/results/quickrace/"
     xml_files = [
         os.path.join(results_filepath, f)
@@ -590,14 +594,20 @@ if __name__ == "__main__":
         if f.lower().endswith(".xml")
     ]
     file_amount = len(xml_files)
+    """
+
+    print("Player 1 is running also, Zobros is back!!!")
 
     C = Client(p=3001)
     for step in range(C.maxSteps, 0, -1):
         C.get_servers_input()
         drive(C)
         C.respond_to_server()
-    
-    race_logger.check_for_new_file(file_amount)
-    race_logger.add_race_stats()
+
+
+    #race_logger.check_for_new_file(file_amount)
+    #race_logger.add_race_stats()
+
+    #subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
 
     C.shutdown()

@@ -72,9 +72,10 @@
       <attnum name="G graph" val="1"/>
       <attnum name="debug info" val="1"/>
       <attstr name="current driver" val="berniw hist 6"/>
-      <attnum name="enable mirror" val="0"/>
+      <attnum name="enable mirror" val="1"/>
       <attnum name="arcade" val="0"/>
       <attnum name="driver board" val="1"/>
+      <attnum name="map mode" val="4"/>
     </section>
 
   </section>
