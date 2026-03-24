@@ -7,6 +7,11 @@ HASH_FILE=".torcs_build_hash"
 # ------------------------------
 # 1️⃣ Rebuild container if needed
 # ------------------------------
+if ! command -v podman &> /dev/null; then
+    echo "Podman not found. Please install Podman first."
+    exit 1
+fi
+
 CURRENT_HASH=$(find . -type f \
     ! -path "./.git/*" \
     ! -path "./logs/*" \
@@ -31,21 +36,44 @@ fi
 # ------------------------------
 # 2️⃣ Wayland + GPU mounts
 # ------------------------------
-WAYLAND_SOCKET="$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
+DISPLAY_OPTS=""
+GPU_OPTS=""
 
-if [ ! -S "$WAYLAND_SOCKET" ]; then
-    echo "Error: Wayland socket not found at $WAYLAND_SOCKET"
-    exit 1
+# Wayland first
+if [ -n "$WAYLAND_DISPLAY" ] && [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
+    echo "Wayland detected"
+
+    DISPLAY_OPTS="-e WAYLAND_DISPLAY=$WAYLAND_DISPLAY \
+                   -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
+                   -v $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:rw \
+                   -v /tmp:/tmp:rw \
+                   -e QT_QPA_PLATFORM=wayland \
+                   -e LIBGL_ALWAYS_INDIRECT=0"
+
+    # WSLg mounts if needed
+    if grep -q Microsoft /proc/version; then
+        DISPLAY_OPTS="$DISPLAY_OPTS -v /mnt/wslg:/mnt/wslg:rw"
+    fi
+
+# Fallback to X11
+else
+    echo "Falling back to X11"
+    DISPLAY_OPTS="-e DISPLAY=$DISPLAY \
+                   -v /tmp/.X11-unix:/tmp/.X11-unix:rw"
+    xhost +local:root &> /dev/null
 fi
 
-WAYLAND_OPTS="-e WAYLAND_DISPLAY=$WAYLAND_DISPLAY \
-              -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
-              -v $WAYLAND_SOCKET:$WAYLAND_SOCKET:rw \
-              -v /tmp:/tmp:rw"
+# Mount GPU devices if available
+if [ -d /dev/dri ]; then
+    echo "GPU devices detected, mounting /dev/dri"
+    GPU_OPTS="--device /dev/dri:/dev/dri"
+fi
 
-GPU_OPTS=""
-[ -d /dev/dri ] && GPU_OPTS="--device /dev/dri:/dev/dri"
-
+# Mount PulseAudio socket
+if [ -S "$XDG_RUNTIME_DIR/pulse/native" ]; then
+    DISPLAY_OPTS="$DISPLAY_OPTS -e PULSE_SERVER=unix:$XDG_RUNTIME_DIR/pulse/native \
+                               -v $XDG_RUNTIME_DIR/pulse:$XDG_RUNTIME_DIR/pulse:rw"
+fi
 # ------------------------------
 # 3️⃣ Launch the container
 # ------------------------------
@@ -54,5 +82,5 @@ echo "Running torcs-podman container with Wayland..."
 podman run --rm -it \
     --network=host \
     $GPU_OPTS \
-    $WAYLAND_OPTS \
+    $DISPLAY_OPTS \
     torcs-podman

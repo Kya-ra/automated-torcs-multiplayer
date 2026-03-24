@@ -245,25 +245,24 @@ class MainWindow(QMainWindow):
                 return None
             selected.append(file_path)
         return selected
-
+    
     def launch_multiplayer(self):
         scripts = self._validate_selected_scripts()
         if scripts is None:
             return
 
         player_count = self.player_count_spin.value()
-        # Only filenames inside /torcs/Scripts
-        script_paths = [str(Path("/torcs/Scripts") / Path(s).name) for s in scripts]
+        script_paths = [str(Path(s).name) for s in scripts]
 
-        launch_sh = Path("/torcs/launch.sh")
-
-        env = dict(**os.environ)  # copy current environment
+        env = dict(os.environ)
         env["PLAYER_COUNT"] = str(player_count)
-        env["SCRIPTS"] = " ".join(script_paths)  # required by launch.sh
+        env["SCRIPTS"] = " ".join(script_paths)
+
+        container_run = Path("/torcs/containerrun.py")
 
         try:
             subprocess.Popen(
-                [str(launch_sh)],
+                ["python3", str(container_run)],
                 cwd="/torcs",
                 env=env
             )

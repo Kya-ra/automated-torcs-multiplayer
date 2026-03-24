@@ -24,6 +24,7 @@ COPY launch_menu /torcs/launch_menu
 COPY torcs /torcs/torcs
 COPY Scripts /torcs/Scripts
 COPY launch.sh /torcs/launch.sh
+COPY containerrun.py /torcs/containerrun.py
 COPY launch_menu/menu_multiplayer.py /torcs/menu_multiplayer.py
 
 # Make launch.sh executable
@@ -32,6 +33,7 @@ RUN chmod +x /torcs/launch.sh
 # Environment defaults
 ENV QT_QPA_PLATFORM=wayland
 ENV LIBGL_ALWAYS_INDIRECT=0
+ENV PULSE_SERVER=unix:/run/user/1000/pulse/native
 
 # Start the GUI automatically
 CMD ["python3", "menu_multiplayer.py"]
