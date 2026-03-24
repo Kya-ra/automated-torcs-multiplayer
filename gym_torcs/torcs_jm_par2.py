@@ -6,7 +6,7 @@ import time
 import math
 import subprocess
 
-from logs import race_logger
+#from logs import race_logger
 
 PI = 3.14159265359
 data_size = 2**17
@@ -581,6 +581,8 @@ def drive(c: Client):
 
 
 if __name__ == "__main__":
+    
+    """
     race_logger.add_car_stats(BASE_SPEED, MIN_SPEED, MAX_SPEED, K_CURVE, STEER_GAIN, CENTER_GAIN, STEER_SMOOTH_ALPHA, BRAKE_ANGLE_TH, BRAKE_MAX, ENABLE_TC, TC_SLIP_TH, TC_ACCEL_CUT)
     
     results_filepath = "../torcs/results/quickrace/"
@@ -590,6 +592,7 @@ if __name__ == "__main__":
         if f.lower().endswith(".xml")
     ]
     file_amount = len(xml_files)
+    """
 
     print("Player 2 is running, also Krmal is a good creator.")
 
@@ -599,8 +602,8 @@ if __name__ == "__main__":
         drive(C2)
         C2.respond_to_server()
     
-    race_logger.check_for_new_file(file_amount)
-    race_logger.add_race_stats()
+    #race_logger.check_for_new_file(file_amount)
+    #race_logger.add_race_stats()
 
     subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
 
