@@ -1,17 +1,9 @@
 import xml.etree.ElementTree as ET
 from subprocess import call
-import sys
 
 xml_path = "torcs/config/raceman/quickrace.xml"
 
-player_count = 1
-if len(sys.argv) > 1:
-        try:
-            player_count = int(sys.argv[1])
-        except ValueError:
-            print(f"Invalid player count '{sys.argv[1]}', defaulting to 1")
-
-print(f"Starting TORCS with {player_count} player(s)")
+player_count = int(input("Enter player count: "))
 
 tree = ET.parse(xml_path)
 root = tree.getroot()
