@@ -141,6 +141,7 @@ class Client:
                 print("Count Down : " + str(n_fail))
                 if n_fail < 0:
                     print("relaunch torcs")
+                    
                     time.sleep(1.0)
                     if self.vision is False:
                         os.system("torcs -nofuel -nodamage -nolaptime &")
