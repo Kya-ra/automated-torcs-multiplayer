@@ -256,7 +256,7 @@ class MainWindow(QMainWindow):
 
         env = dict(os.environ)
         env["PLAYER_COUNT"] = str(player_count)
-        env["SCRIPTS"] = " ".join(script_paths)
+        env["SCRIPTS"] = ":".join(script_paths)
 
         container_run = Path("/torcs/containerrun.py")
 

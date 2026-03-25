@@ -2,8 +2,9 @@
 
 ## Steps to run:
 
+Prerequisites: Podman & Python3
+
 1. Place Scripts in /Scripts
-2. Run with `python3 launch_menu/menu_multiplayer.py`
+2. Run with `./Torcs.sh`
 3. Follow on-screen instructions
-4. Launch Multiplayer
-5. Hit Enter 3 times
+4. Launch, and when Torcs opens select default option 3 times to start

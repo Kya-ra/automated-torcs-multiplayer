@@ -4,7 +4,7 @@ set -e
 
 SESSION="torcs"
 players=${PLAYER_COUNT:-1}
-mapfile -t SCRIPT_ARRAY <<< "$SCRIPTS"
+IFS=":" read -r -a SCRIPT_ARRAY <<< "$SCRIPTS"
 per_window=2
 
 if [ -z "$players" ]; then
