@@ -151,7 +151,7 @@ class MainWindow(QMainWindow):
         rows_holder = QWidget()
         rows_holder.setLayout(rows_layout)
 
-        launch_button = QPushButton("Launch TORCS")
+        launch_button = QPushButton("Launch Multiplayer")
         launch_button.clicked.connect(self.launch_multiplayer)
 
         action_row = QHBoxLayout()

@@ -3,4 +3,3 @@ torcs/*
 __pycache__
 gym_torcs/logs/*
 launch_menu/fonts/*
-.torcs_build_hash
