@@ -48,7 +48,8 @@ while [ $player -le $players ]; do
             exit 1
         fi
 
-        tmux send-keys -t $current "python3 /torcs/Scripts/$script" C-m
+        port=$((3000 + i))
+        tmux send-keys -t $current "python3 /torcs/Scripts/$script -p $port" C-m
 
         if [ $i -lt $end ]; then
             current=$(tmux split-window -t $current -P -F "#{pane_id}")

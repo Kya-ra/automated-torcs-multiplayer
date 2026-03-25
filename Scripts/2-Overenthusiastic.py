@@ -1,10 +1,12 @@
+#Default code provided by IBM
+
 import socket
 import sys
 import getopt
 import os
 import time
 import math
-#import subprocess
+import subprocess
 
 #from logs import race_logger
 
@@ -78,8 +80,8 @@ class Client:
         self.vision = vision
 
         self.host = "localhost"
-        self.port = 3004
-        self.sid = "SCR4"
+        self.port = 3002
+        self.sid = "SCR2"
         self.maxEpisodes = 1
         self.trackname = "unknown"
         self.stage = 3
@@ -313,7 +315,7 @@ class DriverAction:
     def __init__(self):
         self.actionstr = str()
         self.d = {
-            "accel": 0.85,
+            "accel": 0.55,
             "brake": 0.0,
             "clutch": 0.0,
             "gear": 1,
@@ -397,30 +399,30 @@ def destringify(s):
 # --------------------------
 # Speed plan (tune these)
 # --------------------------
-BASE_SPEED = 185.0  # straight-line target speed (km/h)
-MIN_SPEED = 50.0  # minimum target speed in sharp turns
-MAX_SPEED = 250.0  # cap speed (for safety / stability)
-K_CURVE = 58  # how strongly curves reduce target speed (bigger = slower in turns)
+BASE_SPEED = 235.0  # straight-line target speed (km/h)
+MIN_SPEED = 70.0  # minimum target speed in sharp turns
+MAX_SPEED = 300.0  # cap speed (for safety / stability)
+K_CURVE = 20  # how strongly curves reduce target speed (bigger = slower in turns)
 
 # --------------------------
 # Steering plan (tune these)
 # --------------------------
-STEER_GAIN = 11.5  # angle -> steer sensitivity
-CENTER_GAIN = 0.24  # trackPos -> centering strength
-STEER_SMOOTH_ALPHA = 0.82  # 0.10~0.35, bigger = more responsive, smaller = smoother
+STEER_GAIN = 6.8  # angle -> steer sensitivity
+CENTER_GAIN = 0.08  # trackPos -> centering strength
+STEER_SMOOTH_ALPHA = 0.78  # 0.10~0.35, bigger = more responsive, smaller = smoother
 
 # --------------------------
 # Braking plan (tune these)
 # --------------------------
-BRAKE_ANGLE_TH = 0.12  # radians. bigger = brake later, smaller = brake earlier
-BRAKE_MAX = 1.0  # max brake intensity
+BRAKE_ANGLE_TH = 0.55  # radians. bigger = brake later, smaller = brake earlier
+BRAKE_MAX = 0.45  # max brake intensity
 
 # --------------------------
 # Traction control
 # --------------------------
 ENABLE_TC = True
-TC_SLIP_TH = 0.7
-TC_ACCEL_CUT = 0.02
+TC_SLIP_TH = 2.8
+TC_ACCEL_CUT = 0.05
 
 
 def estimate_curve_from_track(track19):
@@ -581,6 +583,7 @@ def drive(c: Client):
 
 
 if __name__ == "__main__":
+    
     """
     race_logger.add_car_stats(BASE_SPEED, MIN_SPEED, MAX_SPEED, K_CURVE, STEER_GAIN, CENTER_GAIN, STEER_SMOOTH_ALPHA, BRAKE_ANGLE_TH, BRAKE_MAX, ENABLE_TC, TC_SLIP_TH, TC_ACCEL_CUT)
     
@@ -593,17 +596,15 @@ if __name__ == "__main__":
     file_amount = len(xml_files)
     """
 
-    print("Player 4 is running.")
-
-    C4 = Client(p=3004)
-    for step in range(C4.maxSteps, 0, -1):
-        C4.get_servers_input()
-        drive(C4)
-        C4.respond_to_server()
+    C = Client()
+    for step in range(C.maxSteps, 0, -1):
+        C.get_servers_input()
+        drive(C)
+        C.respond_to_server()
     
     #race_logger.check_for_new_file(file_amount)
     #race_logger.add_race_stats()
 
-    # subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
+    subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
 
-    C4.shutdown()
+    C.shutdown()

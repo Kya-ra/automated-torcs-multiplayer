@@ -78,8 +78,8 @@ class Client:
         self.vision = vision
 
         self.host = "localhost"
-        self.port = 3007
-        self.sid = "SCR7"
+        self.port = 3008
+        self.sid = "SCR8"
         self.maxEpisodes = 1
         self.trackname = "unknown"
         self.stage = 3
@@ -593,13 +593,13 @@ if __name__ == "__main__":
     file_amount = len(xml_files)
     """
 
-    print("Player 7 is running.")
+    print("Player 8 is running.")
 
-    C7 = Client(p=3007)
-    for step in range(C7.maxSteps, 0, -1):
-        C7.get_servers_input()
-        drive(C7)
-        C7.respond_to_server()
+    C = Client()
+    for step in range(C.maxSteps, 0, -1):
+        C.get_servers_input()
+        drive(C)
+        C.respond_to_server()
     
     """
     race_logger.check_for_new_file(file_amount)
@@ -608,4 +608,4 @@ if __name__ == "__main__":
     
     # subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
 
-    C7.shutdown()
+    C.shutdown()
