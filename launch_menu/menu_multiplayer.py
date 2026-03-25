@@ -1,0 +1,283 @@
+import subprocess
+import sys
+from pathlib import Path
+import os
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QFontDatabase
+from PyQt6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
+
+class ScriptRow(QWidget):
+    def __init__(self, player_index: int, parent=None, scripts_dir=None):
+        super().__init__(parent)
+        self.player_index = player_index
+        self.scripts_dir = scripts_dir
+        self.file_path = ""
+
+        row = QHBoxLayout(self)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(12)
+
+        self.player_label = QLabel(f"Player {player_index}")
+        self.path_label = QLabel("No file selected")
+        self.path_label.setWordWrap(True)
+
+        self.browse_button = QPushButton("Browse")
+        self.browse_button.clicked.connect(self.pick_file)
+
+        row.addWidget(self.player_label, stretch=0)
+        row.addWidget(self.path_label, stretch=1)
+        row.addWidget(self.browse_button, stretch=0)
+
+    def pick_file(self):
+        app = QApplication.instance()
+        original_style = app.styleSheet() if app else ""
+        if app:
+            # Temporarily clear app stylesheet so dialog uses normal system colors.
+            app.setStyleSheet("")
+
+        # Use a top-level dialog (no parent) so menu page styles don't bleed into it.
+        dialog = QFileDialog(None, f"Select script for Player {self.player_index}")
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        dialog.setNameFilter("Python Files (*.py)")
+        dialog.setDirectory(str(self.scripts_dir))
+        # Force native dialog so it does not inherit themed colors.
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, False)
+        # Fallback styling in case non-native dialog is used under WSL.
+        dialog.setStyleSheet(
+            """
+            QWidget { color: black; background-color: white; }
+            QLineEdit, QListView, QTreeView, QComboBox {
+                color: black;
+                background-color: white;
+            }
+            QPushButton {
+                color: black;
+                background-color: #efefef;
+                border: 1px solid #888;
+            }
+            """
+        )
+
+        file_path = ""
+        try:
+            if dialog.exec():
+                files = dialog.selectedFiles()
+                if files:
+                    file_path = files[0]
+        finally:
+            if app:
+                app.setStyleSheet(original_style)
+        if file_path:
+            self.file_path = file_path
+            self.path_label.setText(file_path)
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Torcs Setup")
+        self.setFixedSize(1000, 700)
+
+        self.repo_root = Path(__file__).resolve().parents[1]
+        self.scripts_dir = self.repo_root / "/torcs/Scripts"
+
+        self.stacked = QStackedWidget()
+        self.setCentralWidget(self.stacked)
+
+        self.torcs_font = self._load_font()
+
+        self.multiplayer_page = self._build_multiplayer_page()
+
+        self.stacked.addWidget(self.multiplayer_page)
+        self.stacked.setCurrentWidget(self.multiplayer_page)
+
+        self._apply_styles()
+        self._update_script_rows()
+
+    def _load_font(self):
+        font_path = str(
+            self.repo_root / "launch_menu" / "fonts" / "Serpentine Bold.otf"
+        )
+        font_id = QFontDatabase.addApplicationFont(font_path)
+        if font_id != -1:
+            families = QFontDatabase.applicationFontFamilies(font_id)
+            if families:
+                return families[0]
+        return "Arial"
+
+    def _build_multiplayer_page(self):
+        page = QWidget()
+        page.setObjectName("backgroundImage")
+
+        title = QLabel("Player Setup")
+        title.setFont(QFont(self.torcs_font, 34))
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        subtitle = QLabel("Select player(s) and upload one Python script per player.")
+        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        subtitle.setFont(QFont("Arial", 12))
+
+        count_wrap = QHBoxLayout()
+        count_label = QLabel("Player Count:")
+        count_label.setFont(QFont("Arial", 12))
+        self.player_count_spin = QSpinBox()
+        self.player_count_spin.setRange(1, 8)
+        self.player_count_spin.setValue(1)
+        self.player_count_spin.valueChanged.connect(self._update_script_rows)
+        count_wrap.addStretch()
+        count_wrap.addWidget(count_label)
+        count_wrap.addWidget(self.player_count_spin)
+        count_wrap.addStretch()
+
+        self.script_rows = []
+        rows_layout = QVBoxLayout()
+        rows_layout.setSpacing(8)
+        for i in range(1, 9):
+            row = ScriptRow(i, scripts_dir=self.scripts_dir)
+            self.script_rows.append(row)
+            rows_layout.addWidget(row)
+
+        rows_holder = QWidget()
+        rows_holder.setLayout(rows_layout)
+
+        launch_button = QPushButton("Launch TORCS")
+        launch_button.clicked.connect(self.launch_multiplayer)
+
+        action_row = QHBoxLayout()
+        action_row.addStretch()
+        action_row.addWidget(launch_button)
+
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(40, 30, 40, 30)
+        layout.setSpacing(12)
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
+        layout.addLayout(count_wrap)
+        layout.addWidget(rows_holder)
+        layout.addStretch()
+        layout.addLayout(action_row)
+        return page
+
+    def _apply_styles(self):
+        self.setStyleSheet(
+            """
+            #backgroundImage {
+                border-image: url(launch_menu/assets/splash-qrtrk-blue.png) 0 0 0 0 stretch stretch;
+            }
+            #backgroundImage, #backgroundImage QWidget {
+                color: yellow;
+            }
+            #backgroundImage QLabel {
+                background: transparent;
+            }
+            #backgroundImage QPushButton {
+                border: 2px solid transparent;
+                padding: 8px 14px;
+                font-size: 18px;
+                color: rgb(255, 255, 0);
+                background-color: rgba(0, 0, 0, 0);
+            }
+            #backgroundImage QPushButton:hover {
+                border: 2px solid rgb(255, 0, 0);
+                color: red;
+                background-color: rgba(0, 0, 0, 20);
+            }
+            #backgroundImage QPushButton:pressed {
+                color: rgb(255, 180, 180);
+            }
+            #backgroundImage QSpinBox {
+                min-width: 70px;
+                font-size: 16px;
+                color: yellow;
+                background-color: rgba(0, 0, 0, 150);
+                border: 1px solid rgba(255, 255, 0, 120);
+                padding: 2px;
+            }
+            """
+        )
+
+    def show_multiplayer_page(self):
+        self.stacked.setCurrentWidget(self.multiplayer_page)
+
+    def _update_script_rows(self):
+        visible_rows = self.player_count_spin.value()
+        for idx, row in enumerate(self.script_rows, start=1):
+            row.setVisible(idx <= visible_rows)
+
+    def _validate_selected_scripts(self):
+        player_count = self.player_count_spin.value()
+        selected = []
+
+        for i in range(player_count):
+            row = self.script_rows[i]
+            file_path = row.file_path.strip()
+            if not file_path:
+                QMessageBox.warning(
+                    self,
+                    "Missing Script",
+                    f"Please select a Python file for Player {i + 1}.",
+                )
+                return None
+            if not file_path.lower().endswith(".py"):
+                QMessageBox.warning(
+                    self,
+                    "Invalid File",
+                    f"Player {i + 1} file must be a .py script.",
+                )
+                return None
+            if not Path(file_path).exists():
+                QMessageBox.warning(
+                    self,
+                    "Missing File",
+                    f"Selected file for Player {i + 1} was not found.",
+                )
+                return None
+            selected.append(file_path)
+        return selected
+
+    def launch_multiplayer(self):
+        scripts = self._validate_selected_scripts()
+        if scripts is None:
+            return
+
+        player_count = self.player_count_spin.value()
+        script_paths = [str(Path(s).name) for s in scripts]
+
+        env = dict(os.environ)
+        env["PLAYER_COUNT"] = str(player_count)
+        env["SCRIPTS"] = ":".join(script_paths)
+
+        container_run = Path("/torcs/containerrun.py")
+
+        try:
+            subprocess.Popen(["python3", str(container_run)], cwd="/torcs", env=env)
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Launch Failed",
+                f"Failed to launch TORCS:\n{exc}",
+            )
+
+
+def main():
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

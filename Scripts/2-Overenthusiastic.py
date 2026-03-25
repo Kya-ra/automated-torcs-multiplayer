@@ -1,12 +1,14 @@
+# Default code provided by IBM
+
 import socket
 import sys
 import getopt
 import os
 import time
 import math
-#import subprocess
+import subprocess
 
-#from logs import race_logger
+# from logs import race_logger
 
 PI = 3.14159265359
 data_size = 2**17
@@ -78,8 +80,8 @@ class Client:
         self.vision = vision
 
         self.host = "localhost"
-        self.port = 3003
-        self.sid = "SCR3"
+        self.port = 3002
+        self.sid = "SCR2"
         self.maxEpisodes = 1
         self.trackname = "unknown"
         self.stage = 3
@@ -139,7 +141,7 @@ class Client:
                 print("Count Down : " + str(n_fail))
                 if n_fail < 0:
                     print("relaunch torcs")
-                    os.system("pkill torcs")
+
                     time.sleep(1.0)
                     if self.vision is False:
                         os.system("torcs -nofuel -nodamage -nolaptime &")
@@ -313,7 +315,7 @@ class DriverAction:
     def __init__(self):
         self.actionstr = str()
         self.d = {
-            "accel": 0.18,
+            "accel": 0.55,
             "brake": 0.0,
             "clutch": 0.0,
             "gear": 1,
@@ -397,30 +399,30 @@ def destringify(s):
 # --------------------------
 # Speed plan (tune these)
 # --------------------------
-BASE_SPEED = 115.0  # straight-line target speed (km/h)
-MIN_SPEED = 45.0  # minimum target speed in sharp turns
-MAX_SPEED = 165.0  # cap speed (for safety / stability)
-K_CURVE = 85  # how strongly curves reduce target speed (bigger = slower in turns)
+BASE_SPEED = 235.0  # straight-line target speed (km/h)
+MIN_SPEED = 70.0  # minimum target speed in sharp turns
+MAX_SPEED = 300.0  # cap speed (for safety / stability)
+K_CURVE = 20  # how strongly curves reduce target speed (bigger = slower in turns)
 
 # --------------------------
 # Steering plan (tune these)
 # --------------------------
-STEER_GAIN = 17.5  # angle -> steer sensitivity
-CENTER_GAIN = 0.42  # trackPos -> centering strength
-STEER_SMOOTH_ALPHA = 0.18  # 0.10~0.35, bigger = more responsive, smaller = smoother
+STEER_GAIN = 6.8  # angle -> steer sensitivity
+CENTER_GAIN = 0.08  # trackPos -> centering strength
+STEER_SMOOTH_ALPHA = 0.78  # 0.10~0.35, bigger = more responsive, smaller = smoother
 
 # --------------------------
 # Braking plan (tune these)
 # --------------------------
-BRAKE_ANGLE_TH = 0.18  # radians. bigger = brake later, smaller = brake earlier
-BRAKE_MAX = 1.0  # max brake intensity
+BRAKE_ANGLE_TH = 0.55  # radians. bigger = brake later, smaller = brake earlier
+BRAKE_MAX = 0.45  # max brake intensity
 
 # --------------------------
 # Traction control
 # --------------------------
 ENABLE_TC = True
-TC_SLIP_TH = 0.9
-TC_ACCEL_CUT = 0.22
+TC_SLIP_TH = 2.8
+TC_ACCEL_CUT = 0.05
 
 
 def estimate_curve_from_track(track19):
@@ -593,17 +595,15 @@ if __name__ == "__main__":
     file_amount = len(xml_files)
     """
 
-    print("Player 3 is running.")
+    C = Client()
+    for step in range(C.maxSteps, 0, -1):
+        C.get_servers_input()
+        drive(C)
+        C.respond_to_server()
 
-    C3 = Client(p=3003)
-    for step in range(C3.maxSteps, 0, -1):
-        C3.get_servers_input()
-        drive(C3)
-        C3.respond_to_server()
-    
-    #race_logger.check_for_new_file(file_amount)
-    #race_logger.add_race_stats()
+    # race_logger.check_for_new_file(file_amount)
+    # race_logger.add_race_stats()
 
-    # subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
+    subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
 
-    C3.shutdown()
+    C.shutdown()

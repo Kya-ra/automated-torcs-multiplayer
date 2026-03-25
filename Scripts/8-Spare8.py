@@ -4,9 +4,9 @@ import getopt
 import os
 import time
 import math
-#import subprocess
+# import subprocess
 
-#from logs import race_logger
+# from logs import race_logger
 
 PI = 3.14159265359
 data_size = 2**17
@@ -139,7 +139,7 @@ class Client:
                 print("Count Down : " + str(n_fail))
                 if n_fail < 0:
                     print("relaunch torcs")
-                    os.system("pkill torcs")
+
                     time.sleep(1.0)
                     if self.vision is False:
                         os.system("torcs -nofuel -nodamage -nolaptime &")
@@ -595,17 +595,17 @@ if __name__ == "__main__":
 
     print("Player 8 is running.")
 
-    C8 = Client(p=3008)
-    for step in range(C8.maxSteps, 0, -1):
-        C8.get_servers_input()
-        drive(C8)
-        C8.respond_to_server()
-    
+    C = Client()
+    for step in range(C.maxSteps, 0, -1):
+        C.get_servers_input()
+        drive(C)
+        C.respond_to_server()
+
     """
     race_logger.check_for_new_file(file_amount)
     race_logger.add_race_stats()
     """
-    
+
     # subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
 
-    C8.shutdown()
+    C.shutdown()

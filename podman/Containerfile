@@ -1,19 +1,39 @@
-FROM python:3.11-slim
-
+FROM python:3.13-slim
 WORKDIR /torcs
 
-RUN dpkg --add-architecture i386
-RUN apt-get update
-RUN apt-get install -y --no-install-recommends wine wine32 tmux libgl1-mesa-dri libgl1-mesa-dri:i386 libgl1 libgl1:i386 libglu1-mesa libglu1-mesa:i386 libxkbcommon0 libegl1 libxcb1 libx11-6 libx11-xcb1 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render0 libxcb-render-util0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxext6 libxrender1 libxrandr2 libxi6 libsm6 libice6 libfontconfig1 libdbus-1-3 libxkbcommon-x11-0
+# System dependencies (Wine, X11, GPU, QtWayland)
+RUN dpkg --add-architecture i386 \
+    && apt-get update && apt-get install -y \
+        wine wine32 \
+        x11-xserver-utils \
+        libgl1-mesa-dri \
+        libgl1 \
+        mesa-utils \
+        qtwayland5 \
+        pulseaudio \
+        libpulse0 libpulse0:i386 \
+        tmux \
+    && rm -rf /var/lib/apt/lists/*
 
+# Python dependencies including PyQt6
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-COPY launch.sh .
-COPY test.py .
-RUN chmod +x /torcs/launch.sh
-COPY gym_torcs /torcs/gym_torcs
-COPY torcs /torcs/torcs
+# Copy GUI + scripts + assets
 COPY launch_menu /torcs/launch_menu
+COPY torcs /torcs/torcs
+COPY Scripts /torcs/Scripts
+COPY launch.sh /torcs/launch.sh
+COPY containerrun.py /torcs/containerrun.py
+COPY launch_menu/menu_multiplayer.py /torcs/menu_multiplayer.py
 
-CMD ["python3", "test.py"]
+# Make launch.sh executable
+RUN chmod +x /torcs/launch.sh
+
+# Environment defaults
+ENV QT_QPA_PLATFORM=wayland
+ENV LIBGL_ALWAYS_INDIRECT=0
+ENV PULSE_SERVER=unix:/run/user/1000/pulse/native
+
+# Start the GUI automatically
+CMD ["python3", "menu_multiplayer.py"]
