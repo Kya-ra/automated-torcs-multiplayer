@@ -28,15 +28,9 @@ for child in to_remove:
 for i in range(player_count):
     sec = ET.Element("section", {"name": str(i + 1)})
 
-    attnum = ET.SubElement(sec, "attnum", {
-        "name": "idx",
-        "val": str(i)
-    })
+    attnum = ET.SubElement(sec, "attnum", {"name": "idx", "val": str(i)})
 
-    attstr = ET.SubElement(sec, "attstr", {
-        "name": "module",
-        "val": "scr_server"
-    })
+    attstr = ET.SubElement(sec, "attstr", {"name": "module", "val": "scr_server"})
 
     drivers_section.append(sec)
 

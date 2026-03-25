@@ -1,98 +1,121 @@
-#This code was written by University College London students participating in an IBM Hackathon
-#It is available at https://github.com/eimamiyasaka/ucl-f1-jarvis-torcs-ai-racing/blob/main/torcs_jm_par.py and used with permission of Jonny at IBM
+# This code was written by University College London students participating in an IBM Hackathon
+# It is available at https://github.com/eimamiyasaka/ucl-f1-jarvis-torcs-ai-racing/blob/main/torcs_jm_par.py and used with permission of Jonny at IBM
+# Some minor changes have been made for compatability and formatting standards. These are documented in README.md
 
 import socket
 import sys
 import getopt
 import os
 import time
+import math
 
-PI= 3.14159265359
+PI = 3.14159265359
 
 data_size = 2**17
 
-ophelp=  'Options:\n'
-ophelp+= ' --host, -H <host>    TORCS server host. [localhost]\n'
-ophelp+= ' --port, -p <port>    TORCS port. [3001]\n'
-ophelp+= ' --id, -i <id>        ID for server. [SCR]\n'
-ophelp+= ' --steps, -m <#>      Maximum simulation steps. 1 sec ~ 50 steps. [100000]\n'
-ophelp+= ' --episodes, -e <#>   Maximum learning episodes. [1]\n'
-ophelp+= ' --track, -t <track>  Your name for this track. Used for learning. [unknown]\n'
-ophelp+= ' --stage, -s <#>      0=warm up, 1=qualifying, 2=race, 3=unknown. [3]\n'
-ophelp+= ' --debug, -d          Output full telemetry.\n'
-ophelp+= ' --help, -h           Show this help.\n'
-ophelp+= ' --version, -v        Show current version.'
-usage= 'Usage: %s [ophelp [optargs]] \n' % sys.argv[0]
-usage= usage + ophelp
-version= "20130505-2"
+ophelp = "Options:\n"
+ophelp += " --host, -H <host>    TORCS server host. [localhost]\n"
+ophelp += " --port, -p <port>    TORCS port. [3001]\n"
+ophelp += " --id, -i <id>        ID for server. [SCR]\n"
+ophelp += " --steps, -m <#>      Maximum simulation steps. 1 sec ~ 50 steps. [100000]\n"
+ophelp += " --episodes, -e <#>   Maximum learning episodes. [1]\n"
+ophelp += (
+    " --track, -t <track>  Your name for this track. Used for learning. [unknown]\n"
+)
+ophelp += " --stage, -s <#>      0=warm up, 1=qualifying, 2=race, 3=unknown. [3]\n"
+ophelp += " --debug, -d          Output full telemetry.\n"
+ophelp += " --help, -h           Show this help.\n"
+ophelp += " --version, -v        Show current version."
+usage = "Usage: %s [ophelp [optargs]] \n" % sys.argv[0]
+usage = usage + ophelp
+version = "20130505-2"
 
-def clip(v,lo,hi):
-    if v<lo: return lo
-    elif v>hi: return hi
-    else: return v
 
-def bargraph(x,mn,mx,w,c='X'):
-    '''Draws a simple asciiart bar graph. Very handy for
+def clip(v, lo, hi):
+    if v < lo:
+        return lo
+    elif v > hi:
+        return hi
+    else:
+        return v
+
+
+def bargraph(x, mn, mx, w, c="X"):
+    """Draws a simple asciiart bar graph. Very handy for
     visualizing what's going on with the data.
     x= Value from sensor, mn= minimum plottable value,
     mx= maximum plottable value, w= width of plot in chars,
-    c= the character to plot with.'''
-    if not w: return '' # No width!
-    if x<mn: x= mn      # Clip to bounds.
-    if x>mx: x= mx      # Clip to bounds.
-    tx= mx-mn # Total real units possible to show on graph.
-    if tx<=0: return 'backwards' # Stupid bounds.
-    upw= tx/float(w) # X Units per output char width.
-    if upw<=0: return 'what?' # Don't let this happen.
-    negpu, pospu, negnonpu, posnonpu= 0,0,0,0
-    if mn < 0: # Then there is a negative part to graph.
-        if x < 0: # And the plot is on the negative side.
-            negpu= -x + min(0,mx)
-            negnonpu= -mn + x
-        else: # Plot is on pos. Neg side is empty.
-            negnonpu= -mn + min(0,mx) # But still show some empty neg.
-    if mx > 0: # There is a positive part to the graph
-        if x > 0: # And the plot is on the positive side.
-            pospu= x - max(0,mn)
-            posnonpu= mx - x
-        else: # Plot is on neg. Pos side is empty.
-            posnonpu= mx - max(0,mn) # But still show some empty pos.
-    nnc= int(negnonpu/upw)*'-'
-    npc= int(negpu/upw)*c
-    ppc= int(pospu/upw)*c
-    pnc= int(posnonpu/upw)*'_'
-    return '[%s]' % (nnc+npc+ppc+pnc)
+    c= the character to plot with."""
+    if not w:
+        return ""  # No width!
+    if x < mn:
+        x = mn  # Clip to bounds.
+    if x > mx:
+        x = mx  # Clip to bounds.
+    tx = mx - mn  # Total real units possible to show on graph.
+    if tx <= 0:
+        return "backwards"  # Stupid bounds.
+    upw = tx / float(w)  # X Units per output char width.
+    if upw <= 0:
+        return "what?"  # Don't let this happen.
+    negpu, pospu, negnonpu, posnonpu = 0, 0, 0, 0
+    if mn < 0:  # Then there is a negative part to graph.
+        if x < 0:  # And the plot is on the negative side.
+            negpu = -x + min(0, mx)
+            negnonpu = -mn + x
+        else:  # Plot is on pos. Neg side is empty.
+            negnonpu = -mn + min(0, mx)  # But still show some empty neg.
+    if mx > 0:  # There is a positive part to the graph
+        if x > 0:  # And the plot is on the positive side.
+            pospu = x - max(0, mn)
+            posnonpu = mx - x
+        else:  # Plot is on neg. Pos side is empty.
+            posnonpu = mx - max(0, mn)  # But still show some empty pos.
+    nnc = int(negnonpu / upw) * "-"
+    npc = int(negpu / upw) * c
+    ppc = int(pospu / upw) * c
+    pnc = int(posnonpu / upw) * "_"
+    return "[%s]" % (nnc + npc + ppc + pnc)
 
 
-class Client():
-    def __init__(self,H=None,p=None,i=None,e=None,t=None,s=None,d=None,vision=False):
+class Client:
+    def __init__(
+        self, H=None, p=None, i=None, e=None, t=None, s=None, d=None, vision=False
+    ):
         self.vision = vision
 
-        self.host= 'localhost'
-        self.port= 3001
-        self.sid= 'SCR-UCL'
-        self.maxEpisodes=1 # "Maximum number of learning episodes to perform"
-        self.trackname= 'unknown'
-        self.stage= 3 # 0=Warm-up, 1=Qualifying 2=Race, 3=unknown <Default=3>
-        self.debug= False
-        self.maxSteps= 100000  # 50steps/second
+        self.host = "localhost"
+        self.port = 3001
+        self.sid = "SCR-UCL"
+        self.maxEpisodes = 1  # "Maximum number of learning episodes to perform"
+        self.trackname = "unknown"
+        self.stage = 3  # 0=Warm-up, 1=Qualifying 2=Race, 3=unknown <Default=3>
+        self.debug = False
+        self.maxSteps = 100000  # 50steps/second
         self.parse_the_command_line()
-        if H: self.host= H
-        if p: self.port= p
-        if i: self.sid= i
-        if e: self.maxEpisodes= e
-        if t: self.trackname= t
-        if s: self.stage= s
-        if d: self.debug= d
-        self.S= ServerState()
-        self.R= DriverAction()
+        if H:
+            self.host = H
+        if p:
+            self.port = p
+        if i:
+            self.sid = i
+        if e:
+            self.maxEpisodes = e
+        if t:
+            self.trackname = t
+        if s:
+            self.stage = s
+        if d:
+            self.debug = d
+        self.S = ServerState()
+        self.R = DriverAction()
         self.setup_connection()
 
     def setup_connection(self):
         try:
-            self.so= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        except socket.error as emsg:
-            print('Error: Could not create socket...')
+            self.so = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        except socket.error:
+            print("Error: Could not create socket...")
             sys.exit(-1)
         self.so.settimeout(1)
 
@@ -101,44 +124,54 @@ class Client():
         restart_attempts = 0
 
         while True:
-            a= "-45 -19 -12 -7 -4 -2.5 -1.7 -1 -.5 0 .5 1 1.7 2.5 4 7 12 19 45"
+            a = "-45 -19 -12 -7 -4 -2.5 -1.7 -1 -.5 0 .5 1 1.7 2.5 4 7 12 19 45"
 
-            initmsg='%s(init %s)' % (self.sid,a)
+            initmsg = "%s(init %s)" % (self.sid, a)
 
             try:
                 self.so.sendto(initmsg.encode(), (self.host, self.port))
-            except socket.error as emsg:
+            except socket.error:
                 sys.exit(-1)
-            sockdata= str()
+            sockdata = str()
             try:
-                sockdata,addr= self.so.recvfrom(data_size)
-                sockdata = sockdata.decode('utf-8')
-            except socket.error as emsg:
+                sockdata, addr = self.so.recvfrom(data_size)
+                sockdata = sockdata.decode("utf-8")
+            except socket.error:
                 print("Waiting for server on %d............" % self.port)
                 print("Count Down : " + str(n_fail))
                 if n_fail < 0:
                     restart_attempts += 1
                     if restart_attempts > max_restart_attempts:
-                        print("\n" + "="*50)
+                        print("\n" + "=" * 50)
                         print("ERROR: Could not connect to TORCS server.")
-                        print("Please manually start TORCS and begin a race with scr_server driver.")
-                        print("="*50)
-                        raise ConnectionError("TORCS server not available after %d restart attempts" % max_restart_attempts)
+                        print(
+                            "Please manually start TORCS and begin a race with scr_server driver."
+                        )
+                        print("=" * 50)
+                        raise ConnectionError(
+                            "TORCS server not available after %d restart attempts"
+                            % max_restart_attempts
+                        )
 
-                    print("Attempting to relaunch TORCS (attempt %d/%d)..." % (restart_attempts, max_restart_attempts))
+                    print(
+                        "Attempting to relaunch TORCS (attempt %d/%d)..."
+                        % (restart_attempts, max_restart_attempts)
+                    )
 
                     # Platform-specific restart
-                    if sys.platform == 'win32':
-                        os.system('taskkill /IM wtorcs.exe /F 2>nul')
+                    if sys.platform == "win32":
+                        os.system("taskkill /IM wtorcs.exe /F 2>nul")
                         time.sleep(1.0)
                         # TORCS must be run from its directory
-                        torcs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'torcs')
-                        torcs_exe = os.path.join(torcs_dir, 'wtorcs.exe')
+                        torcs_dir = os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)), "torcs"
+                        )
+                        torcs_exe = os.path.join(torcs_dir, "wtorcs.exe")
                         if os.path.exists(torcs_exe):
                             # Save current directory and change to torcs dir
                             original_dir = os.getcwd()
                             os.chdir(torcs_dir)
-                            os.startfile('wtorcs.exe')
+                            os.startfile("wtorcs.exe")
                             os.chdir(original_dir)  # Restore original directory
                             time.sleep(10.0)  # Wait for TORCS to load
                             print("Please start a Quick Race manually in TORCS.")
@@ -146,113 +179,140 @@ class Client():
                             print("Could not find wtorcs.exe at: %s" % torcs_exe)
                             print("Please start TORCS manually and begin a race.")
                     else:
-                        
                         time.sleep(1.0)
                         if self.vision is False:
-                            os.system('torcs -nofuel -nodamage -nolaptime &')
+                            os.system("torcs -nofuel -nodamage -nolaptime &")
                         else:
-                            os.system('torcs -nofuel -nodamage -nolaptime -vision &')
+                            os.system("torcs -nofuel -nodamage -nolaptime -vision &")
                         time.sleep(1.0)
-                        if os.path.exists('autostart.sh'):
-                            os.system('sh autostart.sh')
+                        if os.path.exists("autostart.sh"):
+                            os.system("sh autostart.sh")
 
                     time.sleep(10.0)  # Give TORCS time to start
                     n_fail = 5
                 n_fail -= 1
 
-            identify = '***identified***'
+            identify = "***identified***"
             if identify in sockdata:
                 print("Client connected on %d.............." % self.port)
                 break
 
     def parse_the_command_line(self):
         try:
-            (opts, args) = getopt.getopt(sys.argv[1:], 'H:p:i:m:e:t:s:dhv',
-                       ['host=','port=','id=','steps=',
-                        'episodes=','track=','stage=',
-                        'debug','help','version'])
+            (opts, args) = getopt.getopt(
+                sys.argv[1:],
+                "H:p:i:m:e:t:s:dhv",
+                [
+                    "host=",
+                    "port=",
+                    "id=",
+                    "steps=",
+                    "episodes=",
+                    "track=",
+                    "stage=",
+                    "debug",
+                    "help",
+                    "version",
+                ],
+            )
         except getopt.error as why:
-            print('getopt error: %s\n%s' % (why, usage))
+            print("getopt error: %s\n%s" % (why, usage))
             sys.exit(-1)
         try:
             for opt in opts:
-                if opt[0] == '-h' or opt[0] == '--help':
+                if opt[0] == "-h" or opt[0] == "--help":
                     print(usage)
                     sys.exit(0)
-                if opt[0] == '-d' or opt[0] == '--debug':
-                    self.debug= True
-                if opt[0] == '-H' or opt[0] == '--host':
-                    self.host= opt[1]
-                if opt[0] == '-i' or opt[0] == '--id':
-                    self.sid= opt[1]
-                if opt[0] == '-t' or opt[0] == '--track':
-                    self.trackname= opt[1]
-                if opt[0] == '-s' or opt[0] == '--stage':
-                    self.stage= int(opt[1])
-                if opt[0] == '-p' or opt[0] == '--port':
-                    self.port= int(opt[1])
-                if opt[0] == '-e' or opt[0] == '--episodes':
-                    self.maxEpisodes= int(opt[1])
-                if opt[0] == '-m' or opt[0] == '--steps':
-                    self.maxSteps= int(opt[1])
-                if opt[0] == '-v' or opt[0] == '--version':
-                    print('%s %s' % (sys.argv[0], version))
+                if opt[0] == "-d" or opt[0] == "--debug":
+                    self.debug = True
+                if opt[0] == "-H" or opt[0] == "--host":
+                    self.host = opt[1]
+                if opt[0] == "-i" or opt[0] == "--id":
+                    self.sid = opt[1]
+                if opt[0] == "-t" or opt[0] == "--track":
+                    self.trackname = opt[1]
+                if opt[0] == "-s" or opt[0] == "--stage":
+                    self.stage = int(opt[1])
+                if opt[0] == "-p" or opt[0] == "--port":
+                    self.port = int(opt[1])
+                if opt[0] == "-e" or opt[0] == "--episodes":
+                    self.maxEpisodes = int(opt[1])
+                if opt[0] == "-m" or opt[0] == "--steps":
+                    self.maxSteps = int(opt[1])
+                if opt[0] == "-v" or opt[0] == "--version":
+                    print("%s %s" % (sys.argv[0], version))
                     sys.exit(0)
         except ValueError as why:
-            print('Bad parameter \'%s\' for option %s: %s\n%s' % (
-                                       opt[1], opt[0], why, usage))
+            print(
+                "Bad parameter '%s' for option %s: %s\n%s"
+                % (opt[1], opt[0], why, usage)
+            )
             sys.exit(-1)
         if len(args) > 0:
-            print('Superflous input? %s\n%s' % (', '.join(args), usage))
+            print("Superflous input? %s\n%s" % (", ".join(args), usage))
             sys.exit(-1)
 
     def get_servers_input(self):
-        '''Server's input is stored in a ServerState object'''
-        if not self.so: return
-        sockdata= str()
+        """Server's input is stored in a ServerState object"""
+        if not self.so:
+            return
+        sockdata = str()
 
         while True:
             try:
-                sockdata,addr= self.so.recvfrom(data_size)
-                sockdata = sockdata.decode('utf-8')
-            except socket.error as emsg:
-                print('.', end=' ')
-            if '***identified***' in sockdata:
+                sockdata, addr = self.so.recvfrom(data_size)
+                sockdata = sockdata.decode("utf-8")
+            except socket.error:
+                print(".", end=" ")
+            if "***identified***" in sockdata:
                 print("Client connected on %d.............." % self.port)
                 continue
-            elif '***shutdown***' in sockdata:
-                print((("Server has stopped the race on %d. "+
-                        "You were in %d place.") %
-                        (self.port,self.S.d['racePos'])))
+            elif "***shutdown***" in sockdata:
+                print(
+                    (
+                        (
+                            "Server has stopped the race on %d. "
+                            + "You were in %d place."
+                        )
+                        % (self.port, self.S.d["racePos"])
+                    )
+                )
                 self.shutdown()
                 return
-            elif '***restart***' in sockdata:
+            elif "***restart***" in sockdata:
                 print("Server has restarted the race on %d." % self.port)
                 self.shutdown()
                 return
-            elif not sockdata: # Empty?
-                continue       # Try again.
+            elif not sockdata:  # Empty?
+                continue  # Try again.
             else:
                 self.S.parse_server_str(sockdata)
                 if self.debug:
-                    sys.stderr.write("\x1b[2J\x1b[H") # Clear for steady output.
+                    sys.stderr.write("\x1b[2J\x1b[H")  # Clear for steady output.
                     print(self.S)
-                break # Can now return from this function.
+                break  # Can now return from this function.
 
     def respond_to_server(self):
-        if not self.so: return
+        if not self.so:
+            return
         try:
             message = repr(self.R)
             self.so.sendto(message.encode(), (self.host, self.port))
         except socket.error as emsg:
-            print("Error sending to server: %s Message %s" % (emsg[1],str(emsg[0])))
+            print("Error sending to server: %s Message %s" % (emsg[1], str(emsg[0])))
             sys.exit(-1)
-        if self.debug: print(self.R.fancyout())
+        if self.debug:
+            print(self.R.fancyout())
 
     def shutdown(self):
-        if not self.so: return
-        print(("Race terminated or %d steps elapsed. Shutting down %d."
-               % (self.maxSteps,self.port)))
+        if not self.so:
+            return
+        print(
+            (
+                "Race terminated or %d steps elapsed. Shutting down %d."
+                % (self.maxSteps, self.port)
+            )
+        )
         self.so.close()
         self.so = None
 
@@ -262,166 +322,240 @@ class Client():
         This is faster than relaunching TORCS - the server resets the car position
         and race state without restarting the process.
         """
-        if not self.so: return
+        if not self.so:
+            return
         print("Requesting race restart on port %d..." % self.port)
-        self.R.d['meta'] = 1
+        self.R.d["meta"] = 1
         try:
             self.respond_to_server()
             time.sleep(0.1)  # Brief pause for server to process
-        except:
-            pass  # Server may close connection immediately
-        self.so.close()
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, socket.timeout):
+            # Server likely closed connection early — safe to ignore
+            pass
+        finally:
+            self.so.close()
         self.so = None
 
-class ServerState():
-    '''What the server is reporting right now.'''
+
+class ServerState:
+    """What the server is reporting right now."""
+
     def __init__(self):
-        self.servstr= str()
-        self.d= dict()
+        self.servstr = str()
+        self.d = dict()
 
     def parse_server_str(self, server_string):
-        '''Parse the server string.'''
-        self.servstr= server_string.strip()[:-1]
-        sslisted= self.servstr.strip().lstrip('(').rstrip(')').split(')(')
+        """Parse the server string."""
+        self.servstr = server_string.strip()[:-1]
+        sslisted = self.servstr.strip().lstrip("(").rstrip(")").split(")(")
         for i in sslisted:
-            w= i.split(' ')
-            self.d[w[0]]= destringify(w[1:])
+            w = i.split(" ")
+            self.d[w[0]] = destringify(w[1:])
 
     def __repr__(self):
         return self.fancyout()
-        out= str()
+        out = str()
         for k in sorted(self.d):
-            strout= str(self.d[k])
+            strout = str(self.d[k])
             if type(self.d[k]) is list:
-                strlist= [str(i) for i in self.d[k]]
-                strout= ', '.join(strlist)
-            out+= "%s: %s\n" % (k,strout)
+                strlist = [str(i) for i in self.d[k]]
+                strout = ", ".join(strlist)
+            out += "%s: %s\n" % (k, strout)
         return out
 
     def fancyout(self):
-        '''Specialty output for useful ServerState monitoring.'''
-        out= str()
-        sensors= [ # Select the ones you want in the order you want them.
-        'stucktimer',
-        'fuel',
-        'distRaced',
-        'distFromStart',
-        'opponents',
-        'wheelSpinVel',
-        'z',
-        'speedZ',
-        'speedY',
-        'speedX',
-        'targetSpeed',
-        'rpm',
-        'skid',
-        'slip',
-        'track',
-        'trackPos',
-        'angle',
+        """Specialty output for useful ServerState monitoring."""
+        out = str()
+        sensors = [  # Select the ones you want in the order you want them.
+            "stucktimer",
+            "fuel",
+            "distRaced",
+            "distFromStart",
+            "opponents",
+            "wheelSpinVel",
+            "z",
+            "speedZ",
+            "speedY",
+            "speedX",
+            "targetSpeed",
+            "rpm",
+            "skid",
+            "slip",
+            "track",
+            "trackPos",
+            "angle",
         ]
 
         for k in sensors:
-            if type(self.d.get(k)) is list: # Handle list type data.
-                if k == 'track': # Nice display for track sensors.
-                    strout= str()
-                    raw_tsens= ['%.1f'%x for x in self.d['track']]
-                    strout+= ' '.join(raw_tsens[:9])+'_'+raw_tsens[9]+'_'+' '.join(raw_tsens[10:])
-                elif k == 'opponents': # Nice display for opponent sensors.
-                    strout= str()
-                    for osensor in self.d['opponents']:
-                        if   osensor >190: oc= '_'
-                        elif osensor > 90: oc= '.'
-                        elif osensor > 39: oc= chr(int(osensor/2)+97-19)
-                        elif osensor > 13: oc= chr(int(osensor)+65-13)
-                        elif osensor >  3: oc= chr(int(osensor)+48-3)
-                        else: oc= '?'
-                        strout+= oc
-                    strout= ' -> '+strout[:18] + ' ' + strout[18:]+' <-'
+            if type(self.d.get(k)) is list:  # Handle list type data.
+                if k == "track":  # Nice display for track sensors.
+                    strout = str()
+                    raw_tsens = ["%.1f" % x for x in self.d["track"]]
+                    strout += (
+                        " ".join(raw_tsens[:9])
+                        + "_"
+                        + raw_tsens[9]
+                        + "_"
+                        + " ".join(raw_tsens[10:])
+                    )
+                elif k == "opponents":  # Nice display for opponent sensors.
+                    strout = str()
+                    for osensor in self.d["opponents"]:
+                        if osensor > 190:
+                            oc = "_"
+                        elif osensor > 90:
+                            oc = "."
+                        elif osensor > 39:
+                            oc = chr(int(osensor / 2) + 97 - 19)
+                        elif osensor > 13:
+                            oc = chr(int(osensor) + 65 - 13)
+                        elif osensor > 3:
+                            oc = chr(int(osensor) + 48 - 3)
+                        else:
+                            oc = "?"
+                        strout += oc
+                    strout = " -> " + strout[:18] + " " + strout[18:] + " <-"
                 else:
-                    strlist= [str(i) for i in self.d[k]]
-                    strout= ', '.join(strlist)
-            else: # Not a list type of value.
-                if k == 'gear': # This is redundant now since it's part of RPM.
-                    gs= '_._._._._._._._._'
-                    p= int(self.d['gear']) * 2 + 2  # Position
-                    l= '%d'%self.d['gear'] # Label
-                    if l=='-1': l= 'R'
-                    if l=='0':  l= 'N'
-                    strout= gs[:p]+ '(%s)'%l + gs[p+3:]
-                elif k == 'damage':
-                    strout= '%6.0f %s' % (self.d[k], bargraph(self.d[k],0,10000,50,'~'))
-                elif k == 'fuel':
-                    strout= '%6.0f %s' % (self.d[k], bargraph(self.d[k],0,100,50,'f'))
-                elif k == 'speedX':
-                    cx= 'X'
-                    if self.d[k]<0: cx= 'R'
-                    strout= '%6.1f %s' % (self.d[k], bargraph(self.d[k],-30,300,50,cx))
-                elif k == 'speedY': # This gets reversed for display to make sense.
-                    strout= '%6.1f %s' % (self.d[k], bargraph(self.d[k]*-1,-25,25,50,'Y'))
-                elif k == 'speedZ':
-                    strout= '%6.1f %s' % (self.d[k], bargraph(self.d[k],-13,13,50,'Z'))
-                elif k == 'z':
-                    strout= '%6.3f %s' % (self.d[k], bargraph(self.d[k],.3,.5,50,'z'))
-                elif k == 'trackPos': # This gets reversed for display to make sense.
-                    cx='<'
-                    if self.d[k]<0: cx= '>'
-                    strout= '%6.3f %s' % (self.d[k], bargraph(self.d[k]*-1,-1,1,50,cx))
-                elif k == 'stucktimer':
+                    strlist = [str(i) for i in self.d[k]]
+                    strout = ", ".join(strlist)
+            else:  # Not a list type of value.
+                if k == "gear":  # This is redundant now since it's part of RPM.
+                    gs = "_._._._._._._._._"
+                    p = int(self.d["gear"]) * 2 + 2  # Position
+                    label = "%d" % self.d["gear"]  # Label
+                    if label == "-1":
+                        label = "R"
+                    if label == "0":
+                        label = "N"
+                    strout = gs[:p] + "(%s)" % label + gs[p + 3 :]
+                elif k == "damage":
+                    strout = "%6.0f %s" % (
+                        self.d[k],
+                        bargraph(self.d[k], 0, 10000, 50, "~"),
+                    )
+                elif k == "fuel":
+                    strout = "%6.0f %s" % (
+                        self.d[k],
+                        bargraph(self.d[k], 0, 100, 50, "f"),
+                    )
+                elif k == "speedX":
+                    cx = "X"
+                    if self.d[k] < 0:
+                        cx = "R"
+                    strout = "%6.1f %s" % (
+                        self.d[k],
+                        bargraph(self.d[k], -30, 300, 50, cx),
+                    )
+                elif k == "speedY":  # This gets reversed for display to make sense.
+                    strout = "%6.1f %s" % (
+                        self.d[k],
+                        bargraph(self.d[k] * -1, -25, 25, 50, "Y"),
+                    )
+                elif k == "speedZ":
+                    strout = "%6.1f %s" % (
+                        self.d[k],
+                        bargraph(self.d[k], -13, 13, 50, "Z"),
+                    )
+                elif k == "z":
+                    strout = "%6.3f %s" % (
+                        self.d[k],
+                        bargraph(self.d[k], 0.3, 0.5, 50, "z"),
+                    )
+                elif k == "trackPos":  # This gets reversed for display to make sense.
+                    cx = "<"
+                    if self.d[k] < 0:
+                        cx = ">"
+                    strout = "%6.3f %s" % (
+                        self.d[k],
+                        bargraph(self.d[k] * -1, -1, 1, 50, cx),
+                    )
+                elif k == "stucktimer":
                     if self.d[k]:
-                        strout= '%3d %s' % (self.d[k], bargraph(self.d[k],0,300,50,"'"))
-                    else: strout= 'Not stuck!'
-                elif k == 'rpm':
-                    g= self.d['gear']
-                    if g < 0:
-                        g= 'R'
+                        strout = "%3d %s" % (
+                            self.d[k],
+                            bargraph(self.d[k], 0, 300, 50, "'"),
+                        )
                     else:
-                        g= '%1d'% g
-                    strout= bargraph(self.d[k],0,10000,50,g)
-                elif k == 'angle':
-                    asyms= [
-                          "  !  ", ".|'  ", "./'  ", "_.-  ", ".--  ", "..-  ",
-                          "---  ", ".__  ", "-._  ", "'-.  ", "'\.  ", "'|.  ",
-                          "  |  ", "  .|'", "  ./'", "  .-'", "  _.-", "  __.",
-                          "  ---", "  --.", "  -._", "  -..", "  '\.", "  '|."  ]
-                    rad= self.d[k]
-                    deg= int(rad*180/PI)
-                    symno= int(.5+ (rad+PI) / (PI/12) )
-                    symno= symno % (len(asyms)-1)
-                    strout= '%5.2f %3d (%s)' % (rad,deg,asyms[symno])
-                elif k == 'skid': # A sensible interpretation of wheel spin.
-                    frontwheelradpersec= self.d['wheelSpinVel'][0]
-                    skid= 0
+                        strout = "Not stuck!"
+                elif k == "rpm":
+                    g = self.d["gear"]
+                    if g < 0:
+                        g = "R"
+                    else:
+                        g = "%1d" % g
+                    strout = bargraph(self.d[k], 0, 10000, 50, g)
+                elif k == "angle":
+                    asyms = [
+                        "  !  ",
+                        ".|'  ",
+                        "./'  ",
+                        "_.-  ",
+                        ".--  ",
+                        "..-  ",
+                        "---  ",
+                        ".__  ",
+                        "-._  ",
+                        "'-.  ",
+                        "'\.  ",
+                        "'|.  ",
+                        "  |  ",
+                        "  .|'",
+                        "  ./'",
+                        "  .-'",
+                        "  _.-",
+                        "  __.",
+                        "  ---",
+                        "  --.",
+                        "  -._",
+                        "  -..",
+                        "  '\.",
+                        "  '|.",
+                    ]
+                    rad = self.d[k]
+                    deg = int(rad * 180 / PI)
+                    symno = int(0.5 + (rad + PI) / (PI / 12))
+                    symno = symno % (len(asyms) - 1)
+                    strout = "%5.2f %3d (%s)" % (rad, deg, asyms[symno])
+                elif k == "skid":  # A sensible interpretation of wheel spin.
+                    frontwheelradpersec = self.d["wheelSpinVel"][0]
+                    skid = 0
                     if frontwheelradpersec:
-                        skid= .5555555555*self.d['speedX']/frontwheelradpersec - .66124
-                    strout= bargraph(skid,-.05,.4,50,'*')
-                elif k == 'slip': # A sensible interpretation of wheel spin.
-                    frontwheelradpersec= self.d['wheelSpinVel'][0]
-                    slip= 0
+                        skid = (
+                            0.5555555555 * self.d["speedX"] / frontwheelradpersec
+                            - 0.66124
+                        )
+                    strout = bargraph(skid, -0.05, 0.4, 50, "*")
+                elif k == "slip":  # A sensible interpretation of wheel spin.
+                    frontwheelradpersec = self.d["wheelSpinVel"][0]
+                    slip = 0
                     if frontwheelradpersec:
-                        slip= ((self.d['wheelSpinVel'][2]+self.d['wheelSpinVel'][3]) -
-                              (self.d['wheelSpinVel'][0]+self.d['wheelSpinVel'][1]))
-                    strout= bargraph(slip,-5,150,50,'@')
+                        slip = (
+                            self.d["wheelSpinVel"][2] + self.d["wheelSpinVel"][3]
+                        ) - (self.d["wheelSpinVel"][0] + self.d["wheelSpinVel"][1])
+                    strout = bargraph(slip, -5, 150, 50, "@")
                 else:
-                    strout= str(self.d[k])
-            out+= "%s: %s\n" % (k,strout)
+                    strout = str(self.d[k])
+            out += "%s: %s\n" % (k, strout)
         return out
 
-class DriverAction():
-    '''What the driver is intending to do (i.e. send to the server).
+
+class DriverAction:
+    """What the driver is intending to do (i.e. send to the server).
     Composes something like this for the server:
     (accel 1)(brake 0)(gear 1)(steer 0)(clutch 0)(focus 0)(meta 0) or
-    (accel 1)(brake 0)(gear 1)(steer 0)(clutch 0)(focus -90 -45 0 45 90)(meta 0)'''
+    (accel 1)(brake 0)(gear 1)(steer 0)(clutch 0)(focus -90 -45 0 45 90)(meta 0)"""
+
     def __init__(self):
-       self.actionstr= str()
-       self.d= { 'accel':0.2,
-                   'brake':0,
-                  'clutch':0,
-                    'gear':1,
-                   'steer':0,
-                   'focus':[-90,-45,0,45,90],
-                    'meta':0
-                    }
+        self.actionstr = str()
+        self.d = {
+            "accel": 0.2,
+            "brake": 0,
+            "clutch": 0,
+            "gear": 1,
+            "steer": 0,
+            "focus": [-90, -45, 0, 45, 90],
+            "meta": 0,
+        }
 
     def clip_to_limits(self):
         """There pretty much is never a reason to send the server
@@ -431,53 +565,59 @@ class DriverAction():
         utility function, but it should be used only for non standard
         things or non obvious limits (limit the steering to the left,
         for example). For normal limits, simply don't worry about it."""
-        self.d['steer']= clip(self.d['steer'], -1, 1)
-        self.d['brake']= clip(self.d['brake'], 0, 1)
-        self.d['accel']= clip(self.d['accel'], 0, 1)
-        self.d['clutch']= clip(self.d['clutch'], 0, 1)
-        if self.d['gear'] not in [-1, 0, 1, 2, 3, 4, 5, 6]:
-            self.d['gear']= 0
-        if self.d['meta'] not in [0,1]:
-            self.d['meta']= 0
-        if type(self.d['focus']) is not list or min(self.d['focus'])<-180 or max(self.d['focus'])>180:
-            self.d['focus']= 0
+        self.d["steer"] = clip(self.d["steer"], -1, 1)
+        self.d["brake"] = clip(self.d["brake"], 0, 1)
+        self.d["accel"] = clip(self.d["accel"], 0, 1)
+        self.d["clutch"] = clip(self.d["clutch"], 0, 1)
+        if self.d["gear"] not in [-1, 0, 1, 2, 3, 4, 5, 6]:
+            self.d["gear"] = 0
+        if self.d["meta"] not in [0, 1]:
+            self.d["meta"] = 0
+        if (
+            type(self.d["focus"]) is not list
+            or min(self.d["focus"]) < -180
+            or max(self.d["focus"]) > 180
+        ):
+            self.d["focus"] = 0
 
     def __repr__(self):
         self.clip_to_limits()
-        out= str()
+        out = str()
         for k in self.d:
-            out+= '('+k+' '
-            v= self.d[k]
-            if not type(v) is list:
-                out+= '%.3f' % v
+            out += "(" + k + " "
+            v = self.d[k]
+            if type(v) is not list:
+                out += "%.3f" % v
             else:
-                out+= ' '.join([str(x) for x in v])
-            out+= ')'
+                out += " ".join([str(x) for x in v])
+            out += ")"
         return out
-        return out+'\n'
+        return out + "\n"
 
     def fancyout(self):
-        '''Specialty output for useful monitoring of bot's effectors.'''
-        out= str()
-        od= self.d.copy()
-        od.pop('gear','') # Not interesting.
-        od.pop('meta','') # Not interesting.
-        od.pop('focus','') # Not interesting. Yet.
+        """Specialty output for useful monitoring of bot's effectors."""
+        out = str()
+        od = self.d.copy()
+        od.pop("gear", "")  # Not interesting.
+        od.pop("meta", "")  # Not interesting.
+        od.pop("focus", "")  # Not interesting. Yet.
         for k in sorted(od):
-            if k == 'clutch' or k == 'brake' or k == 'accel':
-                strout=''
-                strout= '%6.3f %s' % (od[k], bargraph(od[k],0,1,50,k[0].upper()))
-            elif k == 'steer': # Reverse the graph to make sense.
-                strout= '%6.3f %s' % (od[k], bargraph(od[k]*-1,-1,1,50,'S'))
+            if k == "clutch" or k == "brake" or k == "accel":
+                strout = ""
+                strout = "%6.3f %s" % (od[k], bargraph(od[k], 0, 1, 50, k[0].upper()))
+            elif k == "steer":  # Reverse the graph to make sense.
+                strout = "%6.3f %s" % (od[k], bargraph(od[k] * -1, -1, 1, 50, "S"))
             else:
-                strout= str(od[k])
-            out+= "%s: %s\n" % (k,strout)
+                strout = str(od[k])
+            out += "%s: %s\n" % (k, strout)
         return out
 
+
 def destringify(s):
-    '''makes a string into a value or a list of strings into a list of
-    values (if possible)'''
-    if not s: return s
+    """makes a string into a value or a list of strings into a list of
+    values (if possible)"""
+    if not s:
+        return s
     if type(s) is str:
         try:
             return float(s)
@@ -490,43 +630,43 @@ def destringify(s):
         else:
             return [destringify(i) for i in s]
 
+
 def drive_example(c):
-    '''This is only an example. It will get around the track but the
-    correct thing to do is write your own `drive()` function.'''
-    S,R= c.S.d,c.R.d
-    target_speed=160
+    """This is only an example. It will get around the track but the
+    correct thing to do is write your own `drive()` function."""
+    S, R = c.S.d, c.R.d
+    target_speed = 160
 
-    R['steer']= S['angle']*25 / PI
-    R['steer']-= S['trackPos']*.25
+    R["steer"] = S["angle"] * 25 / PI
+    R["steer"] -= S["trackPos"] * 0.25
 
-    R['accel'] = max(0.0, min(1.0, R['accel']))
-    
+    R["accel"] = max(0.0, min(1.0, R["accel"]))
 
-    if S['speedX'] < target_speed - (R['steer']*2.5):
-        R['accel']+= .4
+    if S["speedX"] < target_speed - (R["steer"] * 2.5):
+        R["accel"] += 0.4
     else:
-        R['accel']-= .2
-    if S['speedX']<10:
-       R['accel']+= 1/(S['speedX']+.1)
+        R["accel"] -= 0.2
+    if S["speedX"] < 10:
+        R["accel"] += 1 / (S["speedX"] + 0.1)
 
-    if ((S['wheelSpinVel'][2]+S['wheelSpinVel'][3]) -
-       (S['wheelSpinVel'][0]+S['wheelSpinVel'][1]) > 2):
-       R['accel']-= 0.1
+    if (S["wheelSpinVel"][2] + S["wheelSpinVel"][3]) - (
+        S["wheelSpinVel"][0] + S["wheelSpinVel"][1]
+    ) > 2:
+        R["accel"] -= 0.1
 
-
-
-    R['gear']=1
-    if S['speedX']>60:
-        R['gear']=2
-    if S['speedX']>100:
-        R['gear']=3
-    if S['speedX']>140:
-        R['gear']=4
-    if S['speedX']>190:
-        R['gear']=5
-    if S['speedX']>220:
-        R['gear']=6
+    R["gear"] = 1
+    if S["speedX"] > 60:
+        R["gear"] = 2
+    if S["speedX"] > 100:
+        R["gear"] = 3
+    if S["speedX"] > 140:
+        R["gear"] = 4
+    if S["speedX"] > 190:
+        R["gear"] = 5
+    if S["speedX"] > 220:
+        R["gear"] = 6
     return
+
 
 # if __name__ == "__main__":
 #     C= Client(p=3001)
@@ -537,18 +677,19 @@ def drive_example(c):
 #     C.shutdown()
 
 
-
 #############################################
 # MODULAR DRIVE LOGIC WITH USER PARAMETERS  #
 #############################################
 
-import math
-
 # ================= USER CONFIGURABLE PARAMETERS =================
 # Core driving parameters
 TARGET_SPEED = 80  # Target speed in km/h. Increasing this makes the car go faster but may reduce stability.
-STEER_GAIN = 18     # Steering sensitivity. Higher values make the car turn more aggressively.
-CENTERING_GAIN = 0.60  # How strongly the car corrects its position toward the center of the track.
+STEER_GAIN = (
+    18  # Steering sensitivity. Higher values make the car turn more aggressively.
+)
+CENTERING_GAIN = (
+    0.60  # How strongly the car corrects its position toward the center of the track.
+)
 BRAKE_THRESHOLD = 0.2  # Angle threshold for braking. Lower values brake earlier.
 GEAR_SPEEDS = [0, 50, 80, 120, 150, 200]  # Speed thresholds for gear shifting.
 ENABLE_TRACTION_CONTROL = True  # Toggle traction control system.
@@ -568,13 +709,17 @@ TC_REDUCTION = 0.1  # Throttle reduction when TC activates (0.05-0.3)
 # ================= LIDAR ANTICIPATION PARAMETERS (HIGH IMPACT) =================
 LOOKAHEAD_DISTANCE = 80.0  # Distance threshold to start anticipating corners (40-150)
 CORNER_LOOKAHEAD_GAIN = 0.5  # Pre-steering strength toward open space (0.3-1.0)
-CORNER_STRENGTH_THRESHOLD = 0.1  # Only pre-steer when corner strength exceeds this (0.05-0.3)
+CORNER_STRENGTH_THRESHOLD = (
+    0.1  # Only pre-steer when corner strength exceeds this (0.05-0.3)
+)
 
 # ================= STEERING SMOOTHING PARAMETERS (HIGH IMPACT) =================
 STEER_SMOOTH_ALPHA = 0.15  # Low-pass filter coefficient (0.05-0.3, lower = smoother)
 STEER_RATE_LIMIT = 0.05  # Max steering change per step (0.02-0.1)
 BIAS_SMOOTH_ALPHA = 0.05  # Low-pass filter for bias to prevent sudden flips (0.02-0.1)
-CORNER_STRENGTH_DECAY = 0.03  # How fast corner_strength can DROP (0.02-0.1, lower = slower exit)
+CORNER_STRENGTH_DECAY = (
+    0.03  # How fast corner_strength can DROP (0.02-0.1, lower = slower exit)
+)
 
 # ================= STEERING STATE (for smoothing) =================
 _prev_steer = 0.0
@@ -589,7 +734,9 @@ def reset_steering_state():
     _prev_bias = 0.0
     _prev_corner_strength = 0.0
 
+
 # ================= HELPER FUNCTIONS =================
+
 
 def get_corner_strength(track, apply_smoothing=True):
     """
@@ -694,11 +841,11 @@ def calculate_steering(S):
     3. Smoothing to prevent jittery inputs
     """
     # Base steering: angle correction + centering
-    raw_steer = (S['angle'] * STEER_GAIN / math.pi) - (S['trackPos'] * CENTERING_GAIN)
+    raw_steer = (S["angle"] * STEER_GAIN / math.pi) - (S["trackPos"] * CENTERING_GAIN)
 
     # LIDAR-based pre-steering (HIGH IMPACT FEATURE)
     # Activates when any corner is detected, scaled by corner_strength directly
-    track = S.get('track', None)
+    track = S.get("track", None)
     if track is not None and len(track) >= 19:
         corner_strength = get_corner_strength(track)
 
@@ -717,6 +864,7 @@ def calculate_steering(S):
 
     return smoothed_steer
 
+
 def calculate_throttle(S, R):
     """
     Calculate throttle with LIDAR-based speed adaptation.
@@ -727,25 +875,26 @@ def calculate_throttle(S, R):
     # Calculate effective target speed based on corner proximity
     effective_target = TARGET_SPEED
 
-    track = S.get('track', None)
+    track = S.get("track", None)
     if track is not None and len(track) >= 19:
         corner_strength = get_corner_strength(track)
         # Reduce target speed as corner approaches (down to 50% at max corner strength)
         effective_target = TARGET_SPEED * (1.0 - 0.5 * corner_strength)
 
     # Adjust target based on steering (existing logic)
-    adjusted_target = effective_target - (abs(R['steer']) * SPEED_STEER_FACTOR)
+    adjusted_target = effective_target - (abs(R["steer"]) * SPEED_STEER_FACTOR)
 
-    if S['speedX'] < adjusted_target:
-        accel = min(1.0, R['accel'] + THROTTLE_INCREASE)
+    if S["speedX"] < adjusted_target:
+        accel = min(1.0, R["accel"] + THROTTLE_INCREASE)
     else:
-        accel = max(0.0, R['accel'] - THROTTLE_DECREASE)
+        accel = max(0.0, R["accel"] - THROTTLE_DECREASE)
 
     # Launch assist at low speed
-    if S['speedX'] < 10:
-        accel += 1 / (S['speedX'] + 0.1)
+    if S["speedX"] < 10:
+        accel += 1 / (S["speedX"] + 0.1)
 
     return max(0.0, min(1.0, accel))
+
 
 def apply_brakes(S):
     """
@@ -758,33 +907,39 @@ def apply_brakes(S):
     brake = 0.0
 
     # Reactive braking: angle exceeds threshold
-    if abs(S['angle']) > BRAKE_THRESHOLD:
+    if abs(S["angle"]) > BRAKE_THRESHOLD:
         brake = BRAKE_INTENSITY
 
     # Anticipatory braking: corner approaching fast
-    track = S.get('track', None)
+    track = S.get("track", None)
     if track is not None and len(track) >= 19:
         corner_strength = get_corner_strength(track)
         effective_target = TARGET_SPEED * (1.0 - 0.5 * corner_strength)
 
         # Brake if significantly over effective target speed
-        if S['speedX'] > effective_target + 10 and corner_strength > 0.3:
+        if S["speedX"] > effective_target + 10 and corner_strength > 0.3:
             brake = max(brake, BRAKE_INTENSITY * corner_strength)
 
     return min(1.0, brake)
 
+
 def shift_gears(S):
     gear = 1
     for i, speed in enumerate(GEAR_SPEEDS):
-        if S['speedX'] > speed:
+        if S["speedX"] > speed:
             gear = i + 1
     return min(gear, 6)
 
+
 def traction_control(S, accel):
     if ENABLE_TRACTION_CONTROL:
-        if ((S['wheelSpinVel'][2] + S['wheelSpinVel'][3]) - (S['wheelSpinVel'][0] + S['wheelSpinVel'][1])) > TC_THRESHOLD:
+        if (
+            (S["wheelSpinVel"][2] + S["wheelSpinVel"][3])
+            - (S["wheelSpinVel"][0] + S["wheelSpinVel"][1])
+        ) > TC_THRESHOLD:
             accel -= TC_REDUCTION
     return max(0.0, accel)
+
 
 # ================= LAP TIME EXTRACTION SYSTEM =================
 class LapTimeTracker:
@@ -833,9 +988,8 @@ class LapTimeTracker:
         self._total_time = self._step_count * self._STEP_DURATION
 
         # Get current values
-        dist_from_start = server_state.get('distFromStart', 0)
-        cur_lap_time = server_state.get('curLapTime', None)
-        dist_raced = server_state.get('distRaced', 0)
+        dist_from_start = server_state.get("distFromStart", 0)
+        cur_lap_time = server_state.get("curLapTime", None)
 
         # Method 1: Use curLapTime if available (most accurate)
         if cur_lap_time is not None and self._prev_cur_lap_time is not None:
@@ -879,19 +1033,19 @@ class LapTimeTracker:
         """Get lap time statistics."""
         if not self.lap_times:
             return {
-                'lap_count': 0,
-                'last_lap': None,
-                'best_lap': None,
-                'avg_lap': None,
-                'all_laps': []
+                "lap_count": 0,
+                "last_lap": None,
+                "best_lap": None,
+                "avg_lap": None,
+                "all_laps": [],
             }
 
         return {
-            'lap_count': self.lap_count,
-            'last_lap': self.last_lap_time,
-            'best_lap': self.best_lap_time,
-            'avg_lap': sum(self.lap_times) / len(self.lap_times),
-            'all_laps': self.lap_times.copy()
+            "lap_count": self.lap_count,
+            "last_lap": self.last_lap_time,
+            "best_lap": self.best_lap_time,
+            "avg_lap": sum(self.lap_times) / len(self.lap_times),
+            "all_laps": self.lap_times.copy(),
         }
 
     def reset(self):
@@ -911,32 +1065,37 @@ class LapTimeTracker:
 # ================= DEBUG LOGGING =================
 def log_state(step, S, R):
     """Log car state for debugging. Call every N steps."""
-    track = S.get('track', None)
+    track = S.get("track", None)
 
     # Calculate LIDAR values (use raw values for logging to see actual sensor readings)
     if track is not None and len(track) >= 19:
         forward = track[9]
-        corner_str = get_corner_strength(track, apply_smoothing=False)  # Raw value for debugging
+        corner_str = get_corner_strength(
+            track, apply_smoothing=False
+        )  # Raw value for debugging
         bias = get_lidar_bias(track, apply_smoothing=False)  # Raw value for debugging
     else:
         forward = -1
         corner_str = 0
         bias = 0
 
-    print(f"[{step:5d}] spd:{S['speedX']:5.1f} ang:{S['angle']:+.3f} trkPos:{S['trackPos']:+.2f} | "
-          f"fwd:{forward:5.1f} corner:{corner_str:.2f} bias:{bias:+.2f} | "
-          f"steer:{R['steer']:+.3f} accel:{R['accel']:.2f} brake:{R['brake']:.2f}")
+    print(
+        f"[{step:5d}] spd:{S['speedX']:5.1f} ang:{S['angle']:+.3f} trkPos:{S['trackPos']:+.2f} | "
+        f"fwd:{forward:5.1f} corner:{corner_str:.2f} bias:{bias:+.2f} | "
+        f"steer:{R['steer']:+.3f} accel:{R['accel']:.2f} brake:{R['brake']:.2f}"
+    )
 
 
 # ================= MAIN DRIVE FUNCTION =================
 def drive_modular(c):
     S, R = c.S.d, c.R.d
-    R['steer'] = calculate_steering(S)
-    R['accel'] = calculate_throttle(S, R)
-    R['brake'] = apply_brakes(S)
-    R['accel'] = traction_control(S, R['accel'])
-    R['gear'] = shift_gears(S)
+    R["steer"] = calculate_steering(S)
+    R["accel"] = calculate_throttle(S, R)
+    R["brake"] = apply_brakes(S)
+    R["accel"] = traction_control(S, R["accel"])
+    R["gear"] = shift_gears(S)
     return
+
 
 # ================= MAIN LOOP =================
 if __name__ == "__main__":
@@ -945,7 +1104,9 @@ if __name__ == "__main__":
 
     print("Starting simulation with lap time tracking...")
     print("-" * 50)
-    print("LOG: [step] spd:speed ang:angle trkPos:trackPos | fwd:forward corner:strength bias:bias | steer accel brake")
+    print(
+        "LOG: [step] spd:speed ang:angle trkPos:trackPos | fwd:forward corner:strength bias:bias | steer accel brake"
+    )
     print("-" * 50)
 
     step_count = 0
@@ -967,8 +1128,12 @@ if __name__ == "__main__":
             # Report lap completions
             if lap_tracker.lap_just_completed:
                 stats = lap_tracker.get_stats()
-                print(f"Lap {lap_tracker.lap_count} completed: {lap_tracker.last_lap_time:.3f}s")
-                print(f"  Best: {stats['best_lap']:.3f}s | Avg: {stats['avg_lap']:.3f}s")
+                print(
+                    f"Lap {lap_tracker.lap_count} completed: {lap_tracker.last_lap_time:.3f}s"
+                )
+                print(
+                    f"  Best: {stats['best_lap']:.3f}s | Avg: {stats['avg_lap']:.3f}s"
+                )
 
         C.respond_to_server()
 
@@ -976,7 +1141,7 @@ if __name__ == "__main__":
     print("-" * 50)
     print("Simulation complete.")
     stats = lap_tracker.get_stats()
-    if stats['lap_count'] > 0:
+    if stats["lap_count"] > 0:
         print(f"Total laps: {stats['lap_count']}")
         print(f"Best lap time: {stats['best_lap']:.3f}s")
         print(f"Average lap time: {stats['avg_lap']:.3f}s")

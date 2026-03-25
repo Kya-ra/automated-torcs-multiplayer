@@ -1,4 +1,4 @@
-#Default code provided by IBM
+# Default code provided by IBM
 
 import socket
 import sys
@@ -8,7 +8,7 @@ import time
 import math
 import subprocess
 
-#from logs import race_logger
+# from logs import race_logger
 
 PI = 3.14159265359
 data_size = 2**17
@@ -141,7 +141,7 @@ class Client:
                 print("Count Down : " + str(n_fail))
                 if n_fail < 0:
                     print("relaunch torcs")
-                    
+
                     time.sleep(1.0)
                     if self.vision is False:
                         os.system("torcs -nofuel -nodamage -nolaptime &")
@@ -583,7 +583,6 @@ def drive(c: Client):
 
 
 if __name__ == "__main__":
-    
     """
     race_logger.add_car_stats(BASE_SPEED, MIN_SPEED, MAX_SPEED, K_CURVE, STEER_GAIN, CENTER_GAIN, STEER_SMOOTH_ALPHA, BRAKE_ANGLE_TH, BRAKE_MAX, ENABLE_TC, TC_SLIP_TH, TC_ACCEL_CUT)
     
@@ -601,9 +600,9 @@ if __name__ == "__main__":
         C.get_servers_input()
         drive(C)
         C.respond_to_server()
-    
-    #race_logger.check_for_new_file(file_amount)
-    #race_logger.add_race_stats()
+
+    # race_logger.check_for_new_file(file_amount)
+    # race_logger.add_race_stats()
 
     subprocess.run(["bash", "./terminateProcesses.sh"], check=False)
 

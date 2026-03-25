@@ -108,7 +108,9 @@ class MainWindow(QMainWindow):
         self._update_script_rows()
 
     def _load_font(self):
-        font_path = str(self.repo_root / "launch_menu" / "fonts" / "Serpentine Bold.otf")
+        font_path = str(
+            self.repo_root / "launch_menu" / "fonts" / "Serpentine Bold.otf"
+        )
         font_id = QFontDatabase.addApplicationFont(font_path)
         if font_id != -1:
             families = QFontDatabase.applicationFontFamilies(font_id)
@@ -245,7 +247,7 @@ class MainWindow(QMainWindow):
                 return None
             selected.append(file_path)
         return selected
-    
+
     def launch_multiplayer(self):
         scripts = self._validate_selected_scripts()
         if scripts is None:
@@ -261,17 +263,14 @@ class MainWindow(QMainWindow):
         container_run = Path("/torcs/containerrun.py")
 
         try:
-            subprocess.Popen(
-                ["python3", str(container_run)],
-                cwd="/torcs",
-                env=env
-            )
+            subprocess.Popen(["python3", str(container_run)], cwd="/torcs", env=env)
         except Exception as exc:
             QMessageBox.critical(
                 self,
                 "Launch Failed",
                 f"Failed to launch TORCS:\n{exc}",
             )
+
 
 def main():
     app = QApplication(sys.argv)

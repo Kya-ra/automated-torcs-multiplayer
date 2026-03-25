@@ -22,7 +22,11 @@ if drivers_section is None:
     raise ValueError("Drivers section not found")
 
 # Remove existing numeric driver sections
-to_remove = [child for child in drivers_section.findall("section") if child.get("name", "").isdigit()]
+to_remove = [
+    child
+    for child in drivers_section.findall("section")
+    if child.get("name", "").isdigit()
+]
 for child in to_remove:
     drivers_section.remove(child)
 

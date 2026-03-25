@@ -147,21 +147,21 @@ class TorcsEnv:
 
         # Termination judgement #########################
         # TODO: Ruff reports episode.terminate is unsued. Follow up?
-        #episode_terminate = False
+        # episode_terminate = False
         if track.min() < 0:  # Episode is terminated if the car is out of track
             reward = -1
-            #episode_terminate = True
+            # episode_terminate = True
             client.R.d["meta"] = True
 
         if (
             self.terminal_judge_start < self.time_step
         ):  # Episode terminates if the progress of agent is small
             if progress < self.termination_limit_progress:
-                #episode_terminate = True
+                # episode_terminate = True
                 client.R.d["meta"] = True
 
         if np.cos(obs["angle"]) < 0:  # Episode is terminated if the agent runs backward
-            #episode_terminate = True
+            # episode_terminate = True
             client.R.d["meta"] = True
 
         if client.R.d["meta"] is True:  # Send a reset signal
