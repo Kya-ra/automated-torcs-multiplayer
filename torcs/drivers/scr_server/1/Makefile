@@ -4,7 +4,7 @@
 #    created              : Sat Mar 18 23:11:09 CET 2000
 #    copyright            : (C) 2000 by Eric Espie                         
 #    email                : torcs@free.fr   
-#    version              : $Id: Makefile,v 1.4 2002/06/30 20:20:07 torcs Exp $                                  
+#    version              : $Id: Makefile,v 1.5 2002/06/30 20:20:08 torcs Exp $                                  
 #
 ##############################################################################
 #
@@ -18,7 +18,7 @@
 
 ROBOT = scr_server
 
-SHIPDIR   = drivers/${ROBOT}/1
+SHIPDIR   = drivers/${ROBOT}/0
 
 SHIP      = car1-ow1.rgb $(shell find *.xml -maxdepth 0 -type f -print)
 
@@ -27,6 +27,7 @@ src-robots-scr_server_PKGFILES	= $(shell find * -maxdepth 0 -type f -print)
 src-robots-scr_server_PKGDIR	= ${PACKAGE}-${VERSION}/$(subst ${TORCS_BASE},,$(shell pwd))
 
 include ${MAKE_DEFAULT}
+
 
 
 
