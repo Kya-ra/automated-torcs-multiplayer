@@ -13,6 +13,7 @@ RUN dpkg --add-architecture i386 \
         pulseaudio \
         libpulse0 libpulse0:i386 \
         tmux \
+        python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Python dependencies including PyQt6

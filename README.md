@@ -2,7 +2,7 @@
 
 ## Steps to run:
 
-Prerequisites: Podman & Python3
+Prerequisites: Podman
 
 1. Place Scripts in /Scripts
 2. Run with `./Torcs.sh`
