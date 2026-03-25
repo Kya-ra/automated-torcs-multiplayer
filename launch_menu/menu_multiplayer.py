@@ -1,7 +1,7 @@
 import subprocess
 import sys
 from pathlib import Path
-
+import os
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QFontDatabase
 from PyQt6.QtWidgets import (
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
         self.setFixedSize(1000, 700)
 
         self.repo_root = Path(__file__).resolve().parents[1]
-        self.scripts_dir = self.repo_root / "Scripts"
+        self.scripts_dir = self.repo_root / "/torcs/Scripts"
 
         self.stacked = QStackedWidget()
         self.setCentralWidget(self.stacked)
@@ -151,7 +151,7 @@ class MainWindow(QMainWindow):
         rows_holder = QWidget()
         rows_holder.setLayout(rows_layout)
 
-        launch_button = QPushButton("Launch Multiplayer")
+        launch_button = QPushButton("Launch TORCS")
         launch_button.clicked.connect(self.launch_multiplayer)
 
         action_row = QHBoxLayout()
@@ -245,24 +245,33 @@ class MainWindow(QMainWindow):
                 return None
             selected.append(file_path)
         return selected
-
+    
     def launch_multiplayer(self):
         scripts = self._validate_selected_scripts()
         if scripts is None:
             return
 
         player_count = self.player_count_spin.value()
+        script_paths = [str(Path(s).name) for s in scripts]
+
+        env = dict(os.environ)
+        env["PLAYER_COUNT"] = str(player_count)
+        env["SCRIPTS"] = ":".join(script_paths)
+
+        container_run = Path("/torcs/containerrun.py")
 
         try:
-            script_paths = [str(Path(s).relative_to(self.repo_root)) for s in scripts]
-
             subprocess.Popen(
-                ["./Torcs.sh", str(player_count), *script_paths],
-                cwd=self.repo_root,
+                ["python3", str(container_run)],
+                cwd="/torcs",
+                env=env
             )
         except Exception as exc:
-            print(f"Failed to launch multiplayer: {exc}")
-
+            QMessageBox.critical(
+                self,
+                "Launch Failed",
+                f"Failed to launch TORCS:\n{exc}",
+            )
 
 def main():
     app = QApplication(sys.argv)

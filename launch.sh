@@ -3,8 +3,8 @@
 set -e
 
 SESSION="torcs"
-players=$1
-mapfile -t SCRIPT_ARRAY <<< "$SCRIPTS"
+players=${PLAYER_COUNT:-1}
+IFS=":" read -r -a SCRIPT_ARRAY <<< "$SCRIPTS"
 per_window=2
 
 if [ -z "$players" ]; then
@@ -48,7 +48,7 @@ while [ $player -le $players ]; do
             exit 1
         fi
 
-        tmux send-keys -t $current "python3 $script" C-m
+        tmux send-keys -t $current "python3 /torcs/Scripts/$script" C-m
 
         if [ $i -lt $end ]; then
             current=$(tmux split-window -t $current -P -F "#{pane_id}")

@@ -1,28 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
-# Default player count
-PLAYER_COUNT=${1:-1}
-SCRIPTS=$(printf "%s\n" "${@:2}")
+IMAGE_NAME="torcs-podman"
+HASH_FILE=".torcs_build_hash"
 
 # ------------------------------
-# 1️⃣ Ensure Podman exists
+# 1️⃣ Rebuild container if needed
 # ------------------------------
 if ! command -v podman &> /dev/null; then
     echo "Podman not found. Please install Podman first."
     exit 1
 fi
 
-# ------------------------------
-# 2️⃣ Build container if missing or outdated
-# ------------------------------
-
-IMAGE_NAME="torcs-podman"
-HASH_FILE=".torcs_build_hash"
-
-# Compute hash of relevant files (exclude stuff like .git, logs, etc.)
-CURRENT_HASH=$(find . \
-    -type f \
+CURRENT_HASH=$(find . -type f \
     ! -path "./.git/*" \
     ! -path "./logs/*" \
     ! -path "./*.pyc" \
@@ -30,30 +20,21 @@ CURRENT_HASH=$(find . \
     -exec sha256sum {} + | sort | sha256sum | awk '{print $1}')
 
 PREVIOUS_HASH=""
-if [ -f "$HASH_FILE" ]; then
-    PREVIOUS_HASH=$(cat "$HASH_FILE")
-fi
+[ -f "$HASH_FILE" ] && PREVIOUS_HASH=$(cat "$HASH_FILE")
 
-# Check if image exists
 IMAGE_EXISTS=false
-if podman image exists "$IMAGE_NAME"; then
-    IMAGE_EXISTS=true
-fi
+if podman image exists "$IMAGE_NAME"; then IMAGE_EXISTS=true; fi
 
-# Decide whether to rebuild
 if [ "$IMAGE_EXISTS" = false ] || [ "$CURRENT_HASH" != "$PREVIOUS_HASH" ]; then
     echo "Changes detected or image missing → rebuilding container..."
-
     podman build -t "$IMAGE_NAME" -f podman/Containerfile .
-
-    # Save new hash
     echo "$CURRENT_HASH" > "$HASH_FILE"
 else
     echo "Container is up to date."
 fi
 
 # ------------------------------
-# 3️⃣ Detect host environment
+# 2️⃣ Wayland + GPU mounts
 # ------------------------------
 DISPLAY_OPTS=""
 GPU_OPTS=""
@@ -93,16 +74,13 @@ if [ -S "$XDG_RUNTIME_DIR/pulse/native" ]; then
     DISPLAY_OPTS="$DISPLAY_OPTS -e PULSE_SERVER=unix:$XDG_RUNTIME_DIR/pulse/native \
                                -v $XDG_RUNTIME_DIR/pulse:$XDG_RUNTIME_DIR/pulse:rw"
 fi
-
 # ------------------------------
-# 4️⃣ Run the container
+# 3️⃣ Launch the container
 # ------------------------------
-echo "Running torcs-podman container..."
+echo "Running torcs-podman container with Wayland..."
 
 podman run --rm -it \
     --network=host \
-    -e PLAYER_COUNT="$PLAYER_COUNT" \
-    -e SCRIPTS="$SCRIPTS" \
     $GPU_OPTS \
     $DISPLAY_OPTS \
     torcs-podman
