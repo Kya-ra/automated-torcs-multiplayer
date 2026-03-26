@@ -12,12 +12,16 @@ if ! command -v podman &> /dev/null; then
     exit 1
 fi
 
-CURRENT_HASH=$(find . -type f \
-    ! -path "./.git/*" \
-    ! -path "./logs/*" \
-    ! -path "./*.pyc" \
-    ! -path "./__pycache__/*" \
-    -exec sha256sum {} + | sort | sha256sum | awk '{print $1}')
+CURRENT_HASH=$(find \
+    requirements.txt \
+    launch_menu \
+    torcs \
+    Scripts \
+    launch.sh \
+    containerrun.py \
+    podman/Containerfile \
+    -type f \
+    -exec sha256sum {} + | sort -u | sha256sum | awk '{print $1}')
 
 PREVIOUS_HASH=""
 [ -f "$HASH_FILE" ] && PREVIOUS_HASH=$(cat "$HASH_FILE")
